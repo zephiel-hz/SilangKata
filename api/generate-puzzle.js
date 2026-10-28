@@ -358,9 +358,25 @@ function getFallbackPuzzle(theme, difficulty, targetCount = 12) {
     item => item.word.length >= diffConfig.minLen && item.word.length <= diffConfig.maxLen
   );
 
-  const selected = filtered.length >= targetCount ? filtered : source;
+  let pool = [...(filtered.length >= targetCount ? filtered : source)];
+
+  // Jika targetCount melebihi isi satu kategori (misal 25, 30, 40, 50 kata),
+  // tambahkan kata unik dari kategori lain agar jumlah kata selalu terpenuhi
+  if (pool.length < targetCount) {
+    const seenWords = new Set(pool.map(item => item.word.toUpperCase()));
+    const otherWords = Object.values(FALLBACK_DICTIONARIES).flat();
+    for (const item of otherWords) {
+      const w = (item.word || '').toUpperCase();
+      if (!seenWords.has(w) && w.length >= diffConfig.minLen && w.length <= diffConfig.maxLen) {
+        seenWords.add(w);
+        pool.push(item);
+        if (pool.length >= targetCount) break;
+      }
+    }
+  }
+
   // Acak urutan kata
-  const shuffled = [...selected].sort(() => Math.random() - 0.5);
+  const shuffled = pool.sort(() => Math.random() - 0.5);
 
   return {
     theme: isMixed ? 'campuran' : themeKey,
@@ -415,12 +431,12 @@ export default async function handler(req, res) {
 
   const diffConfig = DIFFICULTY_MAP[difficulty];
 
-  // Target jumlah kata (user-customizable: misal 6, 8, 12, 16, 20)
+  // Target jumlah kata (user-customizable: bertahap dari 6 hingga 50 kata)
   let targetCount = parseInt(body.count || body.wordCount, 10);
   if (!targetCount || isNaN(targetCount) || targetCount < 4) {
     targetCount = 12;
   }
-  targetCount = Math.min(25, Math.max(5, targetCount));
+  targetCount = Math.min(50, Math.max(5, targetCount));
 
   const cacheKey = `${theme}_${difficulty}_${targetCount}`;
   const now = Date.now();
@@ -485,7 +501,7 @@ Format output STRICT JSON (tanpa markdown, tanpa penjelasan tambahan):
   if (!parsed && process.env.GROQ_API_KEY) {
     const groqCandidateModels = process.env.GROQ_MODEL
       ? [process.env.GROQ_MODEL]
-      : ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+      : ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
 
     for (const groqModel of groqCandidateModels) {
       try {
@@ -575,7 +591,7 @@ Format output STRICT JSON (tanpa markdown, tanpa penjelasan tambahan):
               contents: [{ parts: [{ text: promptText }] }],
               generationConfig: {
                 temperature: 0.85,
-                maxOutputTokens: 2048,
+                maxOutputTokens: 4096,
                 responseMimeType: 'application/json'
               }
             })
