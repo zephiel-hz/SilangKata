@@ -92,6 +92,17 @@
       <div class="glass-panel text-center">
         <h2 class="form-label" style="font-size: 1.2rem; margin-bottom: 16px;">MAIN BARENG</h2>
 
+        <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+          <label class="form-label" for="select-max-players">Kapasitas Pemain (Maksimal)</label>
+          <select id="select-max-players" class="select-cyber">
+            <option value="2" selected>👥 2 Pemain (Duet)</option>
+            <option value="3">👥 3 Pemain (Trio)</option>
+            <option value="4">👥 4 Pemain (Kuartet)</option>
+            <option value="5">👥 5 Pemain (Kuintet)</option>
+            <option value="6">👥 6 Pemain (Maksimal)</option>
+          </select>
+        </div>
+
         <button id="btn-create-room" class="btn btn-primary" style="margin-bottom: 8px;">
           <span>➕</span> BUAT ROOM BARU
         </button>
@@ -131,16 +142,13 @@
           </div>
         </div>
 
-        <div class="player-slots">
-          <div class="player-slot">
-            <span class="player-name">👤 Kamu (Pemain 1)</span>
-            <span id="badge-host-status" class="badge badge-waiting">MENGHUBUNGKAN...</span>
-          </div>
-          <div class="player-slot">
-            <span class="player-name">👥 Teman (Pemain 2)</span>
-            <span id="badge-guest-status" class="badge badge-waiting">MENUNGGU...</span>
-          </div>
+        <div id="room-player-slots" class="player-slots">
+          <!-- Dynamic player slots rendered via app.js -->
         </div>
+
+        <button id="btn-start-coop" class="btn btn-primary" style="display: none; margin-bottom: 12px; width: 100%;">
+          <span>🚀</span> MULAI PERMAINAN SEKARANG
+        </button>
 
         <button id="btn-cancel-room" class="btn btn-outline">
           ✕ BATALKAN ROOM
@@ -296,8 +304,8 @@
 
   <!-- Scripts -->
   <script src="vendor/peerjs.min.js"></script>
-  <script src="multiplayer.js?v=2.8"></script>
-  <script src="app.js?v=2.8"></script>
+  <script src="multiplayer.js?v=2.9"></script>
+  <script src="app.js?v=2.9"></script>
   <script>
     // Register Service Worker jika didukung
     if ('serviceWorker' in navigator) {

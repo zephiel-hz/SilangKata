@@ -550,7 +550,7 @@
     constructor() {
       this.mode = 'solo'; // 'solo' | 'coop'
       this.role = 'solo'; // 'coop' | 'solo'
-      this.partnerCursor = null; // { r, c, dir }
+      this.partnerCursors = new Map(); // playerNum => { r, c, dir }
       this.puzzle = null;
       this.userGrid = {}; // 'r-c' => letter
       this.cellSources = {}; // 'r-c' => 'self' | 'partner'
@@ -586,6 +586,7 @@
       this.btnMenuCoop = document.getElementById('btn-menu-coop');
 
       // Lobby Elements
+      this.selectMaxPlayers = document.getElementById('select-max-players');
       this.btnCreateRoom = document.getElementById('btn-create-room');
       this.btnJoinRoom = document.getElementById('btn-join-room');
       this.btnLobbyBack = document.getElementById('btn-lobby-back');
@@ -595,6 +596,8 @@
       this.displayRoomCode = document.getElementById('display-room-code');
       this.btnShareLink = document.getElementById('btn-share-link');
       this.btnCopyCode = document.getElementById('btn-copy-code');
+      this.roomPlayerSlots = document.getElementById('room-player-slots');
+      this.btnStartCoop = document.getElementById('btn-start-coop');
       this.btnCancelRoom = document.getElementById('btn-cancel-room');
       this.badgeHostStatus = document.getElementById('badge-host-status');
       this.badgeGuestStatus = document.getElementById('badge-guest-status');
@@ -661,7 +664,8 @@
 
       // Room
       if (this.btnShareLink) this.btnShareLink.addEventListener('click', () => this.shareRoomLink());
-      this.btnCopyCode.addEventListener('click', () => this.copyRoomCode());
+      if (this.btnCopyCode) this.btnCopyCode.addEventListener('click', () => this.copyRoomCode());
+      if (this.btnStartCoop) this.btnStartCoop.addEventListener('click', () => this.handleHostStartGame());
       this.btnCancelRoom.addEventListener('click', () => {
         window.MP.disconnect();
         this.showScreen('screen-lobby');
@@ -838,62 +842,38 @@
     async handleCreateRoom() {
       this.mode = 'coop';
       this.role = 'coop';
-      this.partnerCursor = null;
+      this.partnerCursors = new Map();
       this.selectedTheme = this.themeSelect.value;
       this.selectedDiff = this.diffSelect.value;
       this.selectedCount = parseInt(this.wordCountSelect?.value, 10) || 12;
 
+      const maxPlayers = parseInt(this.selectMaxPlayers?.value, 10) || 2;
       const code = window.MP.generateRoomCode();
       this.displayRoomCode.textContent = code;
-      if (this.badgeHostStatus) {
-        this.badgeHostStatus.textContent = 'MENGHUBUNGKAN...';
-        this.badgeHostStatus.className = 'badge badge-waiting';
-      }
-      this.badgeGuestStatus.textContent = 'MENUNGGU...';
-      this.badgeGuestStatus.className = 'badge badge-waiting';
       if (this.btnShareLink) this.btnShareLink.disabled = true;
       if (this.btnCopyCode) this.btnCopyCode.disabled = true;
+
+      // Inisialisasi visual slot pemain di layar room
+      this.renderRoomPlayerSlots([{ playerNum: 1, isHost: true }], maxPlayers, true);
       this.showScreen('screen-room');
 
       window.MP.initHost(
         code,
+        maxPlayers,
         // onReady
-        (readyCode) => {
+        (readyCode, capacity) => {
           this.displayRoomCode.textContent = readyCode;
-          if (this.badgeHostStatus) {
-            this.badgeHostStatus.textContent = 'ONLINE';
-            this.badgeHostStatus.className = 'badge badge-ready';
-          }
-          this.badgeGuestStatus.textContent = 'MENUNGGU TEMAN...';
-          this.badgeGuestStatus.className = 'badge badge-waiting';
           if (this.btnShareLink) this.btnShareLink.disabled = false;
           if (this.btnCopyCode) this.btnCopyCode.disabled = false;
+          this.renderRoomPlayerSlots(window.MP.getPlayerList(), capacity, true);
           this.showToast('Room online! Bagikan tautan ke temanmu.');
         },
-        // onGuestConnected
-        async () => {
-          this.badgeGuestStatus.textContent = 'TERHUBUNG!';
-          this.badgeGuestStatus.className = 'badge badge-ready';
-          this.showToast('Partner bergabung! Menyiapkan game...');
-
-          this.showLoading('Menyiapkan puzzle kolaboratif...');
-          const puzzleData = await this.fetchPuzzle(this.selectedTheme, this.selectedDiff, this.selectedCount);
-          const generatedGrid = CrosswordGenerator.generate(puzzleData.words);
-
-          this.puzzle = {
-            ...generatedGrid,
-            theme: puzzleData.theme || 'Acak',
-            difficulty: puzzleData.difficulty || 'medium'
-          };
-
-          // Kirim puzzle utuh ke guest
-          window.MP.send({
-            type: 'init',
-            puzzle: this.puzzle
-          });
-
-          this.hideLoading();
-          this.initGameBoard();
+        // onPlayerListUpdate
+        (players, capacity) => {
+          this.renderRoomPlayerSlots(players, capacity, true);
+          if (players.length >= 2) {
+            this.showToast(`👥 Pemain baru bergabung! (${players.length}/${capacity})`);
+          }
         },
         // onMessage
         (data) => this.handleMultiplayerMessage(data),
@@ -902,13 +882,100 @@
         // onError
         (err) => {
           this.hideLoading();
-          if (this.badgeHostStatus) {
-            this.badgeHostStatus.textContent = 'OFFLINE / GAGAL';
-            this.badgeHostStatus.className = 'badge badge-waiting';
-          }
-          this.showToast('Gagal menghubungkan room ke server: ' + (err.type || 'Error'));
+          this.showToast('Gagal menghubungkan room ke server: ' + (err.type || err.message || 'Error'));
         }
       );
+    }
+
+    renderRoomPlayerSlots(players = [], maxPlayers = 2, isHost = false) {
+      if (!this.roomPlayerSlots) return;
+      this.roomPlayerSlots.innerHTML = '';
+
+      const playerMap = new Map();
+      players.forEach(p => playerMap.set(p.playerNum, p));
+
+      const myPlayerNum = window.MP ? window.MP.playerNum : (isHost ? 1 : 2);
+
+      for (let i = 1; i <= maxPlayers; i++) {
+        const slotEl = document.createElement('div');
+        slotEl.className = 'player-slot';
+
+        const isFilled = playerMap.has(i);
+        const isMe = (i === myPlayerNum);
+
+        const leftEl = document.createElement('div');
+        leftEl.className = 'player-slot-left';
+
+        const dotEl = document.createElement('span');
+        dotEl.className = `player-dot ${isFilled ? 'p' + i : 'waiting'}`;
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'player-name';
+
+        let nameLabel = `👥 Pemain ${i}`;
+        if (i === 1) {
+          nameLabel = isMe ? '👤 Kamu (Host - Pemain 1)' : '👑 Host (Pemain 1)';
+        } else if (isFilled) {
+          nameLabel = isMe ? `👤 Kamu (Pemain ${i})` : `👥 Teman (Pemain ${i})`;
+        } else {
+          nameLabel = `👥 Pemain ${i}`;
+        }
+        nameEl.textContent = nameLabel;
+
+        leftEl.appendChild(dotEl);
+        leftEl.appendChild(nameEl);
+
+        const badgeEl = document.createElement('span');
+        badgeEl.className = `badge ${isFilled ? 'badge-ready' : 'badge-waiting'}`;
+        badgeEl.textContent = isFilled ? 'TERHUBUNG' : 'MENUNGGU...';
+
+        slotEl.appendChild(leftEl);
+        slotEl.appendChild(badgeEl);
+        this.roomPlayerSlots.appendChild(slotEl);
+      }
+
+      // Tombol Mulai Permainan (Khusus Host)
+      if (this.btnStartCoop) {
+        if (isHost) {
+          this.btnStartCoop.style.display = 'block';
+          if (players.length >= 2) {
+            this.btnStartCoop.disabled = false;
+            this.btnStartCoop.innerHTML = `<span>🚀</span> MULAI PERMAINAN SEKARANG (${players.length}/${maxPlayers})`;
+          } else {
+            this.btnStartCoop.disabled = true;
+            this.btnStartCoop.innerHTML = `<span>⏳</span> MENUNGGU TEMAN GABUNG (1/${maxPlayers})`;
+          }
+        } else {
+          this.btnStartCoop.style.display = 'none';
+        }
+      }
+    }
+
+    async handleHostStartGame() {
+      const players = window.MP ? window.MP.getPlayerList() : [];
+      if (players.length < 2) {
+        this.showToast('Tunggu minimal 1 pemain lain bergabung!');
+        return;
+      }
+
+      this.showLoading('Menyiapkan puzzle kolaboratif...');
+      const puzzleData = await this.fetchPuzzle(this.selectedTheme, this.selectedDiff, this.selectedCount);
+      const generatedGrid = CrosswordGenerator.generate(puzzleData.words);
+
+      this.puzzle = {
+        ...generatedGrid,
+        theme: puzzleData.theme || 'Acak',
+        difficulty: puzzleData.difficulty || 'medium'
+      };
+
+      // Kirim puzzle utuh ke seluruh guest terhubung
+      window.MP.send({
+        type: 'init',
+        puzzle: this.puzzle
+      });
+
+      this.hideLoading();
+      this.initGameBoard();
     }
 
     handleJoinRoom() {
@@ -931,14 +998,24 @@
 
       this.mode = 'coop';
       this.role = 'coop';
-      this.partnerCursor = null;
+      this.partnerCursors = new Map();
       this.showLoading('Menghubungi room ' + cleanCode + '...');
 
       window.MP.initGuest(
         cleanCode,
-        // onConnectedToHost
-        () => {
-          this.showLoading('Terhubung ke host! Menunggu puzzle...');
+        // onConnected
+        (welcomeData) => {
+          this.hideLoading();
+          this.displayRoomCode.textContent = cleanCode;
+          if (this.btnShareLink) this.btnShareLink.disabled = false;
+          if (this.btnCopyCode) this.btnCopyCode.disabled = false;
+          this.renderRoomPlayerSlots(welcomeData.players, welcomeData.maxPlayers, false);
+          this.showScreen('screen-room');
+          this.showToast(`Berhasil gabung sebagai Pemain ${welcomeData.playerNum}! Menunggu Host memulai...`);
+        },
+        // onPlayerListUpdate
+        (players, capacity) => {
+          this.renderRoomPlayerSlots(players, capacity, false);
         },
         // onMessage
         (data) => this.handleMultiplayerMessage(data),
@@ -951,6 +1028,8 @@
           const errType = err && err.type ? err.type : '';
           if (errType === 'peer-unavailable') {
             message = `Room "${cleanCode}" tidak ditemukan atau Host sudah keluar/offline.`;
+          } else if (errType === 'room-full') {
+            message = 'Room sudah penuh (kapasitas maksimal tercapai).';
           } else if (errType === 'timeout') {
             message = 'Waktu koneksi habis. Pastikan Host masih membuka room.';
           } else if (errType === 'network') {
@@ -1061,6 +1140,8 @@
     handleMultiplayerMessage(msg) {
       if (!msg || !msg.type) return;
 
+      const pNum = msg.playerNum || 2;
+
       switch (msg.type) {
         case 'init':
           // Diterima guest saat puzzle siap
@@ -1069,23 +1150,36 @@
           this.initGameBoard();
           break;
 
-        case 'letter':
+        case 'letter': {
           // Update huruf dari partner
           const key = `${msg.r}-${msg.c}`;
           this.userGrid[key] = msg.letter;
           this.cellSources[key] = 'partner';
           this.updateCellVisual(msg.r, msg.c);
           this.checkWordsStatus(true);
-          this.partnerCursor = { r: msg.r, c: msg.c, dir: msg.dir || this.partnerCursor?.dir || 'across' };
-          this.renderPartnerCursor();
-          this.setPartnerStatus('typing');
+          const currentCursor = this.partnerCursors.get(pNum) || {};
+          this.partnerCursors.set(pNum, {
+            r: msg.r,
+            c: msg.c,
+            dir: msg.dir || currentCursor.dir || 'across'
+          });
+          this.renderPartnerCursors();
+          this.setPartnerStatus('typing', pNum);
           setTimeout(() => this.setPartnerStatus('connected'), 1200);
           break;
+        }
 
         case 'cursor':
           // Update posisi kursor dan kata yang sedang diisi partner
-          this.partnerCursor = { r: msg.r, c: msg.c, dir: msg.dir };
-          this.renderPartnerCursor();
+          this.partnerCursors.set(pNum, { r: msg.r, c: msg.c, dir: msg.dir });
+          this.renderPartnerCursors();
+          break;
+
+        case 'player-disconnected':
+          this.partnerCursors.delete(pNum);
+          this.renderPartnerCursors();
+          this.showToast(`Pemain ${pNum} meninggalkan ronde.`);
+          this.setPartnerStatus('connected');
           break;
 
         case 'wordSolved':
@@ -1104,7 +1198,7 @@
               this.updateCellVisual(r, c);
             }
 
-            this.showToast(`✨ Partner berhasil menjawab "${solvedWord.word}"! (+100)`);
+            this.showToast(`✨ Pemain ${pNum} berhasil menjawab "${solvedWord.word}"! (+100)`);
           }
           if (msg.score !== undefined) {
             this.score = msg.score;
@@ -1127,14 +1221,14 @@
 
     handlePartnerDisconnected() {
       this.hideLoading();
-      this.partnerCursor = null;
-      this.renderPartnerCursor();
+      this.partnerCursors.clear();
+      this.renderPartnerCursors();
       this.setPartnerStatus('disconnected');
 
       // Modal "PARTNER TERPUTUS" HANYA boleh muncul jika pemain sedang berada di dalam gameplay aktif!
       const isInGame = this.puzzle && this.screenGame && this.screenGame.classList.contains('active');
       if (this.isGameOver || !isInGame) {
-        this.showToast('Koneksi terputus dari partner.', 3500);
+        this.showToast('Koneksi terputus dari room.', 3500);
         if (this.disconnectOverlay) {
           this.disconnectOverlay.classList.remove('active');
         }
@@ -1147,7 +1241,7 @@
       this.disconnectOverlay.classList.add('active');
     }
 
-    setPartnerStatus(state) {
+    setPartnerStatus(state, pNum = 2) {
       if (this.mode !== 'coop') {
         this.partnerStatus.style.display = 'none';
         return;
@@ -1157,13 +1251,14 @@
 
       if (state === 'connected') {
         this.dotPartnerStatus.classList.add('dot-connected');
-        this.textPartnerStatus.textContent = 'Partner: Terhubung';
+        const count = window.MP ? window.MP.getPlayerList().length : 2;
+        this.textPartnerStatus.textContent = `Co-op: ${count} Pemain`;
       } else if (state === 'typing') {
         this.dotPartnerStatus.classList.add('dot-typing');
-        this.textPartnerStatus.textContent = '✏️ Partner mengisi...';
+        this.textPartnerStatus.textContent = `✏️ P${pNum} mengisi...`;
       } else {
         this.dotPartnerStatus.classList.add('dot-disconnected');
-        this.textPartnerStatus.textContent = 'Partner: Terputus';
+        this.textPartnerStatus.textContent = 'Room: Terputus';
       }
     }
 
@@ -1307,7 +1402,7 @@
           this.gridContainer.appendChild(cellEl);
         }
       }
-      this.renderPartnerCursor();
+      this.renderPartnerCursors();
     }
 
     _canRoleEditCell() {
@@ -1445,48 +1540,65 @@
       }
     }
 
-    renderPartnerCursor() {
+    renderPartnerCursors() {
       // 1. Bersihkan highlight partner sebelumnya
       document.querySelectorAll('.grid-cell').forEach(el => {
-        el.classList.remove('cell-partner-focused', 'cell-partner-word');
-        const oldTag = el.querySelector('.partner-tag-pill');
-        if (oldTag) oldTag.remove();
+        el.classList.remove(
+          'cell-partner-focused', 'cell-partner-word',
+          'p1', 'p2', 'p3', 'p4', 'p5', 'p6'
+        );
+        const oldTags = el.querySelectorAll('.partner-tag-pill');
+        oldTags.forEach(t => t.remove());
       });
-      document.querySelectorAll('.clue-item').forEach(el => el.classList.remove('partner-active-clue'));
+      document.querySelectorAll('.clue-item').forEach(el => {
+        el.classList.remove(
+          'partner-active-clue',
+          'p1', 'p2', 'p3', 'p4', 'p5', 'p6'
+        );
+      });
 
-      if (!this.partnerCursor || !this.puzzle) return;
-      const { r, c, dir } = this.partnerCursor;
-      const key = `${r}-${c}`;
-      const cellData = this.puzzle.cells[key];
-      if (!cellData) return;
+      if (!this.partnerCursors || this.partnerCursors.size === 0 || !this.puzzle) return;
 
-      const wordIdx = dir === 'across' ? cellData.acrossWordIdx : cellData.downWordIdx;
-      const word = wordIdx !== null && wordIdx !== undefined ? this.puzzle.words[wordIdx] : null;
+      const myPlayerNum = window.MP ? window.MP.playerNum : 1;
 
-      if (word) {
-        // Highlight kata yang sedang diisi partner
-        for (let i = 0; i < word.word.length; i++) {
-          const wr = word.dir === 'across' ? word.row : word.row + i;
-          const wc = word.dir === 'across' ? word.col + i : word.col;
-          const cellEl = document.querySelector(`.grid-cell[data-r="${wr}"][data-c="${wc}"]`);
-          if (cellEl) cellEl.classList.add('cell-partner-word');
+      for (const [pNum, cursor] of this.partnerCursors) {
+        if (!cursor || pNum === myPlayerNum) continue;
+        const { r, c, dir } = cursor;
+        const key = `${r}-${c}`;
+        const cellData = this.puzzle.cells[key];
+        if (!cellData) continue;
+
+        const colorClass = `p${pNum}`;
+        const wordIdx = dir === 'across' ? cellData.acrossWordIdx : cellData.downWordIdx;
+        const word = wordIdx !== null && wordIdx !== undefined ? this.puzzle.words[wordIdx] : null;
+
+        if (word) {
+          // Highlight kata yang sedang diisi partner
+          for (let i = 0; i < word.word.length; i++) {
+            const wr = word.dir === 'across' ? word.row : word.row + i;
+            const wc = word.dir === 'across' ? word.col + i : word.col;
+            const cellEl = document.querySelector(`.grid-cell[data-r="${wr}"][data-c="${wc}"]`);
+            if (cellEl) {
+              cellEl.classList.add('cell-partner-word', colorClass);
+            }
+          }
+
+          // Tandai petunjuk di panel yang sedang dilihat partner
+          const clueEl = document.querySelector(`.clue-item[data-word-idx="${wordIdx}"]`);
+          if (clueEl) {
+            clueEl.classList.add('partner-active-clue', colorClass);
+          }
         }
 
-        // Tandai petunjuk di panel yang sedang dilihat partner
-        const clueEl = document.querySelector(`.clue-item[data-word-idx="${wordIdx}"]`);
-        if (clueEl) {
-          clueEl.classList.add('partner-active-clue');
+        // Highlight sel spesifik yang sedang difokuskan partner
+        const focusedEl = document.querySelector(`.grid-cell[data-r="${r}"][data-c="${c}"]`);
+        if (focusedEl) {
+          focusedEl.classList.add('cell-partner-focused', colorClass);
+          const tag = document.createElement('span');
+          tag.className = `partner-tag-pill ${colorClass}`;
+          tag.textContent = `P${pNum}`;
+          focusedEl.appendChild(tag);
         }
-      }
-
-      // Highlight sel spesifik yang sedang difokuskan partner
-      const focusedEl = document.querySelector(`.grid-cell[data-r="${r}"][data-c="${c}"]`);
-      if (focusedEl) {
-        focusedEl.classList.add('cell-partner-focused');
-        const tag = document.createElement('span');
-        tag.className = 'partner-tag-pill';
-        tag.textContent = '👥 Partner';
-        focusedEl.appendChild(tag);
       }
     }
 
@@ -2064,7 +2176,7 @@
     endGameCleanup() {
       this.stopTimer();
       this.isGameOver = true;
-      this.partnerCursor = null;
+      this.partnerCursors.clear();
       if (this.mode === 'coop') {
         window.MP.disconnect();
       }
