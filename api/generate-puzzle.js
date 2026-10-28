@@ -434,42 +434,66 @@ Format output STRICT JSON (tanpa markdown, tanpa penjelasan tambahan):
   ]
 }`;
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 7500); // 7.5s max
+  const candidateModels = process.env.GEMINI_MODEL
+    ? [process.env.GEMINI_MODEL]
+    : ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
 
-    const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }],
-          generationConfig: {
-            temperature: 0.9,
-            maxOutputTokens: 2048,
-            responseMimeType: 'application/json'
-          }
-        })
+  let parsed = null;
+  let lastErr = null;
+
+  for (const model of candidateModels) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000); // 20 detik per request
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: {
+              temperature: 0.85,
+              maxOutputTokens: 2048,
+              responseMimeType: 'application/json'
+            }
+          })
+        }
+      );
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        let errDetail = '';
+        try {
+          const errJson = await response.json();
+          errDetail = errJson.error?.message || '';
+        } catch (_) {}
+        console.warn(`Gemini (${model}) status ${response.status}: ${errDetail || response.statusText}`);
+        lastErr = new Error(`HTTP ${response.status}`);
+        continue;
       }
-    );
 
-    clearTimeout(timeout);
+      const data = await response.json();
+      const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      parsed = extractJsonFromText(candidateText);
 
-    if (!response.ok) {
-      console.warn(`Gemini API error ${response.status}. Beralih ke fallback.`);
+      if (parsed && Array.isArray(parsed.words) && parsed.words.length >= 4) {
+        break; // Sukses mendapatkan puzzle
+      }
+    } catch (err) {
+      console.warn(`Gemini (${model}) fetch error:`, err.message);
+      lastErr = err;
+    }
+  }
+
+  try {
+    if (!parsed || !Array.isArray(parsed.words)) {
+      console.warn('Semua model Gemini gagal atau sibuk. Beralih ke kamus fallback.');
       const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount);
       return res.status(200).json(fallbackData);
-    }
-
-    const data = await response.json();
-    const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    const parsed = extractJsonFromText(candidateText);
-
-    if (!parsed || !Array.isArray(parsed.words)) {
-      throw new Error('Format respon Gemini tidak valid');
     }
 
     const validWords = validateAndFilterWords(
