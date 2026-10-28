@@ -912,11 +912,16 @@
     }
 
     handleJoinRoom() {
-      const code = (this.inputRoomCode.value || '').toUpperCase().trim();
+      let raw = (this.inputRoomCode?.value || '').trim();
+      // Ekstrak 6 karakter kode room jika user menempelkan (paste) seluruh tautan/URL
+      const match = raw.match(/[?#&](?:room|join)=([A-Za-z0-9]{6})/i) || raw.match(/([A-Za-z0-9]{6})/);
+      const code = match ? match[1].toUpperCase() : raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
       if (code.length !== 6) {
         this.showToast('Masukkan 6 karakter kode room');
         return;
       }
+      if (this.inputRoomCode) this.inputRoomCode.value = code;
       this.joinRoomByCode(code);
     }
 

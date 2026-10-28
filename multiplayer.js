@@ -7,26 +7,14 @@
   const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
   const PEER_PREFIX = 'silangkata-';
 
-  // Konfigurasi STUN & TURN Relay untuk menembus NAT seluler / firewall / lintas jaringan
+  // Konfigurasi Google STUN Servers terpercaya dan cepat
   const PEER_CONFIG = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
-      {
-        urls: 'turn:openrelay.metered.ca:80',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      },
-      {
-        urls: 'turn:openrelay.metered.ca:443',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      },
-      {
-        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      }
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' }
     ]
   };
 
