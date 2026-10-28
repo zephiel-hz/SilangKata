@@ -481,24 +481,30 @@ Format output STRICT JSON (tanpa markdown, tanpa penjelasan tambahan):
   let parsed = null;
   let activeSource = 'fallback';
 
-  // 1. PRIORITAS 1: GROQ CLOUD (Super cepat 1-2 detik, free tier)
+  // 1. PRIORITAS 1: GROQ CLOUD (Super cepat ~500ms - 1 detik, free tier)
   if (!parsed && process.env.GROQ_API_KEY) {
-    try {
-      const groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
-      console.log(`[AI] Mencoba Groq Cloud (${groqModel})...`);
-      parsed = await callOpenAICompatible({
-        url: 'https://api.groq.com/openai/v1/chat/completions',
-        apiKey: process.env.GROQ_API_KEY,
-        model: groqModel,
-        promptText,
-        timeoutMs: 12000
-      });
-      if (parsed && Array.isArray(parsed.words) && parsed.words.length >= 4) {
-        activeSource = 'groq';
-        console.log('[AI] Sukses generate dari Groq Cloud!');
+    const groqCandidateModels = process.env.GROQ_MODEL
+      ? [process.env.GROQ_MODEL]
+      : ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+
+    for (const groqModel of groqCandidateModels) {
+      try {
+        console.log(`[AI] Mencoba Groq Cloud (${groqModel})...`);
+        parsed = await callOpenAICompatible({
+          url: 'https://api.groq.com/openai/v1/chat/completions',
+          apiKey: process.env.GROQ_API_KEY,
+          model: groqModel,
+          promptText,
+          timeoutMs: 12000
+        });
+        if (parsed && Array.isArray(parsed.words) && parsed.words.length >= 4) {
+          activeSource = 'groq';
+          console.log(`[AI] Sukses generate dari Groq Cloud (${groqModel})!`);
+          break;
+        }
+      } catch (err) {
+        console.warn(`[AI] Groq (${groqModel}) error:`, err.message);
       }
-    } catch (err) {
-      console.warn('[AI] Groq error:', err.message);
     }
   }
 
