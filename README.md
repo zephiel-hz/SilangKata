@@ -122,20 +122,37 @@ Game ini dirancang **100% siap deploy ke Vercel** tanpa konfigurasi rumit:
 
 ---
 
-## 🔑 Cara Mendapatkan Google Gemini API Key (Gratis)
+## 🔑 Konfigurasi API Key AI (Multi-Provider Support)
 
-Google Gemini API menyediakan kuota free-tier yang sangat memadai tanpa perlu kartu kredit:
+SilangKata mendukung berbagai provider AI secara otomatis dengan sistem prioritas cerdas:
 
-1. Kunjungi [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Login dengan akun Google milikmu.
-3. Klik tombol **"Create API Key"** (atau "Get API key").
-4. Pilih project atau buat project baru.
-5. Salin API key yang muncul (`AIzaSy...`).
-6. Pasang di file `.env.local` untuk pengujian lokal:
-   ```env
-   GEMINI_API_KEY=AIzaSyD...
-   ```
-   Atau masukkan di menu **Project Settings > Environment Variables** pada Vercel.
+1. **Groq Cloud (Sangat Direkomendasikan ⭐ — Gratis & Tercepat ~1 detik)**
+   - Daftar gratis di [Groq Console](https://console.groq.com/).
+   - Buat API key di menu **API Keys**.
+   - Pasang di `.env.local`:
+     ```env
+     GROQ_API_KEY=gsk_...
+     ```
+2. **OpenRouter (Akses DeepSeek & Llama Gratis)**
+   - Daftar di [OpenRouter](https://openrouter.ai/).
+   - Buat API key dan pasang di `.env.local`:
+     ```env
+     OPENROUTER_API_KEY=sk-or-v1-...
+     ```
+3. **DeepSeek API Resmi**
+   - Daftar di [DeepSeek Platform](https://platform.deepseek.com/).
+   - Pasang di `.env.local`:
+     ```env
+     DEEPSEEK_API_KEY=sk-...
+     ```
+4. **Google Gemini API**
+   - Dapatkan key di [Google AI Studio](https://aistudio.google.com/app/apikey).
+   - Pasang di `.env.local`:
+     ```env
+     GEMINI_API_KEY=AIzaSy...
+     ```
+
+*(Catatan: Jika tidak ada API key yang disetel atau seluruh provider AI sedang gangguan, aplikasi tetap berjalan 100% mulus menggunakan kamus kurasi lokal).*
 
 ---
 

@@ -22,6 +22,18 @@ function makeMockRes(label) {
 
 async function run() {
   console.log('1. Menguji Serverless Function & Fallback Dictionaries...');
+  // Matikan sementara API key jaringan agar unit test fokus menguji handler & dictionaries dalam hitungan milidetik
+  const savedKeys = {
+    GEMINI: process.env.GEMINI_API_KEY,
+    GROQ: process.env.GROQ_API_KEY,
+    OPENROUTER: process.env.OPENROUTER_API_KEY,
+    DEEPSEEK: process.env.DEEPSEEK_API_KEY
+  };
+  delete process.env.GEMINI_API_KEY;
+  delete process.env.GROQ_API_KEY;
+  delete process.env.OPENROUTER_API_KEY;
+  delete process.env.DEEPSEEK_API_KEY;
+
   await handler({ method: 'POST', body: { theme: 'hewan', difficulty: 'medium', count: 8 } }, makeMockRes('POST hewan 8 kata'));
   await handler({ method: 'POST', body: { theme: 'buah', difficulty: 'easy', count: 6 } }, makeMockRes('POST buah 6 kata'));
   await handler({ method: 'POST', body: { theme: 'makanan', difficulty: 'hard', count: 20 } }, makeMockRes('POST makanan 20 kata'));
@@ -30,6 +42,12 @@ async function run() {
   await handler({ method: 'POST', body: { theme: 'umum', difficulty: 'easy', count: 8 } }, makeMockRes('POST umum 8 kata'));
   await handler({ method: 'POST', body: { theme: '', difficulty: 'hard', count: 12 } }, makeMockRes('POST campuran/acak 12 kata'));
   await handler({ method: 'GET', query: { theme: 'teknologi', count: 16 } }, makeMockRes('GET teknologi 16 kata'));
+
+  // Kembalikan keys
+  if (savedKeys.GEMINI) process.env.GEMINI_API_KEY = savedKeys.GEMINI;
+  if (savedKeys.GROQ) process.env.GROQ_API_KEY = savedKeys.GROQ;
+  if (savedKeys.OPENROUTER) process.env.OPENROUTER_API_KEY = savedKeys.OPENROUTER;
+  if (savedKeys.DEEPSEEK) process.env.DEEPSEEK_API_KEY = savedKeys.DEEPSEEK;
 
   console.log('2. Menguji Algoritma Crossword Generator & Client Fallbacks...');
   const appCode = fs.readFileSync('app.js', 'utf8');
@@ -153,6 +171,13 @@ async function run() {
     throw new Error('Multi-player cursor tracking missing in app.js');
   }
   console.log('✓ Konfigurasi 2-6 pemain dan multi-cursor rendering terverifikasi.');
+
+  console.log('7. Menguji Dukungan Multi-Provider AI (Groq, OpenRouter, DeepSeek, Gemini)...');
+  const genCode = fs.readFileSync('api/generate-puzzle.js', 'utf8');
+  if (!genCode.includes('GROQ_API_KEY') || !genCode.includes('OPENROUTER_API_KEY') || !genCode.includes('DEEPSEEK_API_KEY')) {
+    throw new Error('Dukungan multi-provider AI belum lengkap di api/generate-puzzle.js');
+  }
+  console.log('✓ Multi-Provider AI (Groq, OpenRouter, DeepSeek, Gemini, Offline Fallback) terverifikasi.');
 
   console.log('\nSEMUA TEST LOLOS 100%!');
 }

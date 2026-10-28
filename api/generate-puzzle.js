@@ -308,7 +308,46 @@ function validateAndFilterWords(words, minLen, maxLen, targetCount) {
   return validWords.slice(0, targetCount);
 }
 
-// Helper fallback lokal jika Gemini tidak tersedia
+// Helper untuk memanggil API berbasis OpenAI format (Groq, OpenRouter, DeepSeek)
+async function callOpenAICompatible({ url, apiKey, model, promptText, timeoutMs = 15000, extraHeaders = {} }) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        ...extraHeaders
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: 'Kamu adalah generator kata untuk game teka-teki silang Bahasa Indonesia SilangKata. Berikan output STRICT JSON valid tanpa format markdown.'
+          },
+          { role: 'user', content: promptText }
+        ],
+        temperature: 0.7,
+        response_format: { type: 'json_object' }
+      })
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}: ${errText.slice(0, 140)}`);
+    }
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    return extractJsonFromText(content);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Helper fallback lokal jika Gemini/AI tidak tersedia
 function getFallbackPuzzle(theme, difficulty, targetCount = 12) {
   const isMixed = !theme || theme === 'acak' || theme === 'campuran';
   const diffConfig = DIFFICULTY_MAP[difficulty] || DIFFICULTY_MAP.medium;
@@ -397,11 +436,16 @@ export default async function handler(req, res) {
     });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const hasAnyApiKey = Boolean(
+    process.env.GROQ_API_KEY ||
+    process.env.OPENROUTER_API_KEY ||
+    process.env.DEEPSEEK_API_KEY ||
+    process.env.GEMINI_API_KEY
+  );
 
   // Jika tidak ada API key di environment, langsung gunakan kamus fallback lokal
-  if (!apiKey) {
-    console.warn('GEMINI_API_KEY tidak disetel. Menggunakan fallback lokal.');
+  if (!hasAnyApiKey) {
+    console.warn('[AI] Tidak ada API key AI yang disetel. Menggunakan fallback lokal.');
     const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount);
     return res.status(200).json(fallbackData);
   }
@@ -434,64 +478,135 @@ Format output STRICT JSON (tanpa markdown, tanpa penjelasan tambahan):
   ]
 }`;
 
-  const candidateModels = process.env.GEMINI_MODEL
-    ? [process.env.GEMINI_MODEL]
-    : ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
-
   let parsed = null;
-  let lastErr = null;
+  let activeSource = 'fallback';
 
-  for (const model of candidateModels) {
+  // 1. PRIORITAS 1: GROQ CLOUD (Super cepat 1-2 detik, free tier)
+  if (!parsed && process.env.GROQ_API_KEY) {
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000); // 20 detik per request
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: promptText }] }],
-            generationConfig: {
-              temperature: 0.85,
-              maxOutputTokens: 2048,
-              responseMimeType: 'application/json'
-            }
-          })
-        }
-      );
-
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        let errDetail = '';
-        try {
-          const errJson = await response.json();
-          errDetail = errJson.error?.message || '';
-        } catch (_) {}
-        console.warn(`Gemini (${model}) status ${response.status}: ${errDetail || response.statusText}`);
-        lastErr = new Error(`HTTP ${response.status}`);
-        continue;
-      }
-
-      const data = await response.json();
-      const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      parsed = extractJsonFromText(candidateText);
-
+      const groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+      console.log(`[AI] Mencoba Groq Cloud (${groqModel})...`);
+      parsed = await callOpenAICompatible({
+        url: 'https://api.groq.com/openai/v1/chat/completions',
+        apiKey: process.env.GROQ_API_KEY,
+        model: groqModel,
+        promptText,
+        timeoutMs: 12000
+      });
       if (parsed && Array.isArray(parsed.words) && parsed.words.length >= 4) {
-        break; // Sukses mendapatkan puzzle
+        activeSource = 'groq';
+        console.log('[AI] Sukses generate dari Groq Cloud!');
       }
     } catch (err) {
-      console.warn(`Gemini (${model}) fetch error:`, err.message);
-      lastErr = err;
+      console.warn('[AI] Groq error:', err.message);
+    }
+  }
+
+  // 2. PRIORITAS 2: OPENROUTER (Bisa DeepSeek free atau Llama free)
+  if (!parsed && process.env.OPENROUTER_API_KEY) {
+    try {
+      const orModel = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat:free';
+      console.log(`[AI] Mencoba OpenRouter (${orModel})...`);
+      parsed = await callOpenAICompatible({
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        apiKey: process.env.OPENROUTER_API_KEY,
+        model: orModel,
+        promptText,
+        timeoutMs: 15000,
+        extraHeaders: {
+          'HTTP-Referer': 'https://silangkata.id',
+          'X-Title': 'SilangKata'
+        }
+      });
+      if (parsed && Array.isArray(parsed.words) && parsed.words.length >= 4) {
+        activeSource = 'openrouter';
+        console.log('[AI] Sukses generate dari OpenRouter!');
+      }
+    } catch (err) {
+      console.warn('[AI] OpenRouter error:', err.message);
+    }
+  }
+
+  // 3. PRIORITAS 3: DEEPSEEK RESMI
+  if (!parsed && process.env.DEEPSEEK_API_KEY) {
+    try {
+      const dsModel = process.env.DEEPSEEK_MODEL || 'deepseek-chat';
+      console.log(`[AI] Mencoba DeepSeek API (${dsModel})...`);
+      parsed = await callOpenAICompatible({
+        url: 'https://api.deepseek.com/chat/completions',
+        apiKey: process.env.DEEPSEEK_API_KEY,
+        model: dsModel,
+        promptText,
+        timeoutMs: 18000
+      });
+      if (parsed && Array.isArray(parsed.words) && parsed.words.length >= 4) {
+        activeSource = 'deepseek';
+        console.log('[AI] Sukses generate dari DeepSeek API!');
+      }
+    } catch (err) {
+      console.warn('[AI] DeepSeek error:', err.message);
+    }
+  }
+
+  // 4. PRIORITAS 4: GOOGLE GEMINI API
+  if (!parsed && process.env.GEMINI_API_KEY) {
+    const candidateModels = process.env.GEMINI_MODEL
+      ? [process.env.GEMINI_MODEL]
+      : ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+
+    for (const model of candidateModels) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 18000);
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: promptText }] }],
+              generationConfig: {
+                temperature: 0.85,
+                maxOutputTokens: 2048,
+                responseMimeType: 'application/json'
+              }
+            })
+          }
+        );
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          let errDetail = '';
+          try {
+            const errJson = await response.json();
+            errDetail = errJson.error?.message || '';
+          } catch (_) {}
+          console.warn(`[AI] Gemini (${model}) status ${response.status}: ${errDetail || response.statusText}`);
+          continue;
+        }
+
+        const data = await response.json();
+        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        parsed = extractJsonFromText(candidateText);
+
+        if (parsed && Array.isArray(parsed.words) && parsed.words.length >= 4) {
+          activeSource = 'gemini';
+          console.log(`[AI] Sukses generate dari Gemini (${model})!`);
+          break;
+        }
+      } catch (err) {
+        console.warn(`[AI] Gemini (${model}) error:`, err.message);
+      }
     }
   }
 
   try {
+    // 5. PRIORITAS 5: KAMUS FALLBACK OFFLINE LOKAL (Zero Downtime)
     if (!parsed || !Array.isArray(parsed.words)) {
-      console.warn('Semua model Gemini gagal atau sibuk. Beralih ke kamus fallback.');
+      console.warn('[AI] Semua provider AI tidak tersedia / gagal. Menggunakan kamus offline fallback.');
       const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount);
       return res.status(200).json(fallbackData);
     }
@@ -504,7 +619,7 @@ Format output STRICT JSON (tanpa markdown, tanpa penjelasan tambahan):
     );
 
     if (validWords.length < 5) {
-      console.warn('Jumlah kata valid dari Gemini kurang dari batas minimal. Beralih ke fallback.');
+      console.warn('[AI] Jumlah kata valid kurang dari minimal. Menggunakan kamus offline fallback.');
       const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount);
       return res.status(200).json(fallbackData);
     }
@@ -513,7 +628,7 @@ Format output STRICT JSON (tanpa markdown, tanpa penjelasan tambahan):
       theme: parsed.theme || theme,
       difficulty,
       words: validWords,
-      source: 'gemini'
+      source: activeSource
     };
 
     // Simpan di cache
