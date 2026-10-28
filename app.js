@@ -743,12 +743,23 @@
         });
       }
 
-      // Responsive grid scaling on window resize
-      window.addEventListener('resize', () => {
+      // Responsive grid scaling on window resize & mobile visualViewport (saat keyboard muncul)
+      const onViewportResize = () => {
         if (this.puzzle && this.gridContainer) {
           this._adjustGridCellSize();
+          if (this.activeCell) {
+            const focusedEl = document.querySelector(`.grid-cell[data-r="${this.activeCell.r}"][data-c="${this.activeCell.c}"]`);
+            if (focusedEl) {
+              focusedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+          }
         }
-      });
+      };
+
+      window.addEventListener('resize', onViewportResize);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', onViewportResize);
+      }
     }
 
     showScreen(screenId) {
@@ -1245,8 +1256,8 @@
       const cellFromW = Math.floor((maxW - (cols * 3)) / cols);
       const cellFromH = Math.floor((maxH - (rows * 3)) / rows);
 
-      // Skala maksimal agar layar terisi penuh tanpa terpotong
-      const optimalCellSize = Math.floor(Math.min(70, Math.max(20, Math.min(cellFromW, cellFromH))));
+      // Skala maksimal agar layar terisi penuh tanpa terpotong, minimal 26px agar nyaman di mobile
+      const optimalCellSize = Math.floor(Math.min(70, Math.max(26, Math.min(cellFromW, cellFromH))));
       this.gridContainer.style.setProperty('--cell-size', `${optimalCellSize}px`);
     }
 
@@ -1412,6 +1423,7 @@
       const focusedEl = document.querySelector(`.grid-cell[data-r="${this.activeCell.r}"][data-c="${this.activeCell.c}"]`);
       if (focusedEl) {
         focusedEl.classList.add('cell-focused');
+        focusedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }
 
       // Update tampilan kartu petunjuk aktif
@@ -1613,7 +1625,7 @@
     focusVirtualInput() {
       if (this.virtualKeyboardInput) {
         this.virtualKeyboardInput.value = ' ';
-        this.virtualKeyboardInput.focus();
+        this.virtualKeyboardInput.focus({ preventScroll: true });
       }
     }
 

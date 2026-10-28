@@ -190,14 +190,7 @@
           </div>
         </div>
 
-        <!-- Area Grid Papan TTS -->
-        <main class="grid-arena">
-          <div class="grid-scroll-box">
-            <div id="crossword-grid" class="crossword-grid" role="grid" aria-label="Teka-Teki Silang Grid"></div>
-          </div>
-        </main>
-
-        <!-- Active Clue Bar (Muncul Hanya Ketika Kotak Diklik) -->
+        <!-- Active Clue Bar (Diposisikan di Atas Grid agar TIDAK TERHALANG KEYBOARD VIRTUAL) -->
         <div class="active-clue-bar">
           <div class="active-clue-content" id="active-clue-box">
             <div class="active-clue-header">
@@ -209,6 +202,13 @@
             <div id="active-clue-text" class="active-clue-text">Ketuk salah satu kotak untuk mulai bermain</div>
           </div>
         </div>
+
+        <!-- Area Grid Papan TTS -->
+        <main class="grid-arena">
+          <div class="grid-scroll-box">
+            <div id="crossword-grid" class="crossword-grid" role="grid" aria-label="Teka-Teki Silang Grid"></div>
+          </div>
+        </main>
       </div>
 
       <!-- Drawer / Bottom Sheet Modal Semua Petunjuk -->
@@ -296,8 +296,8 @@
 
   <!-- Scripts -->
   <script src="vendor/peerjs.min.js"></script>
-  <script src="multiplayer.js?v=2.6"></script>
-  <script src="app.js?v=2.6"></script>
+  <script src="multiplayer.js?v=2.7"></script>
+  <script src="app.js?v=2.7"></script>
   <script>
     // Register Service Worker jika didukung
     if ('serviceWorker' in navigator) {
