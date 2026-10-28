@@ -150,6 +150,17 @@
         onError
       };
 
+      // Cek status internet perangkat
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        if (this.callbacks.onError) {
+          this.callbacks.onError({
+            type: 'offline',
+            message: 'Perangkat sedang offline (tidak ada koneksi internet).'
+          });
+        }
+        return;
+      }
+
       const peerId = PEER_PREFIX + this.roomCode;
       console.log(`[MP] Inisialisasi Host (${peerId}), Kapasitas: ${this.maxPlayers} pemain`);
 
@@ -316,6 +327,17 @@
         onError
       };
 
+      // Cek status internet perangkat sebelum mencoba
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        if (this.callbacks.onError) {
+          this.callbacks.onError({
+            type: 'offline',
+            message: 'Perangkat sedang offline (tidak ada koneksi internet).'
+          });
+        }
+        return;
+      }
+
       const hostPeerId = PEER_PREFIX + this.roomCode;
       console.log('[MP] Inisialisasi Guest untuk room:', hostPeerId);
 
@@ -381,6 +403,28 @@
 
     _bindGuestConnectionEvents() {
       if (!this.guestConn) return;
+
+      // Pantau kegagalan ICE/Firewall tingkat RTCPeerConnection WebRTC
+      try {
+        const pc = this.guestConn.peerConnection;
+        if (pc) {
+          pc.addEventListener('iceconnectionstatechange', () => {
+            const state = pc.iceConnectionState;
+            console.log('[MP] Guest ICE Connection State:', state);
+            if (state === 'failed' && !this.isConnected) {
+              console.warn('[MP] ICE Connection State: failed (WebRTC terhalang firewall/NAT)');
+              this._stopConnectionTimeout();
+              if (this.callbacks.onError) {
+                this.callbacks.onError({
+                  type: 'ice-failed',
+                  message: 'Koneksi terhalang firewall jaringan atau NAT ketat.'
+                });
+              }
+              this.disconnect();
+            }
+          });
+        }
+      } catch (_) {}
 
       this.guestConn.on('open', () => {
         console.log('[MP] Koneksi guest ke host terbuka, menunggu handshake...');
@@ -448,6 +492,18 @@
 
       this.guestConn.on('error', (err) => {
         console.error('[MP] Guest connection error:', err);
+        const errMsg = (err && err.message) ? err.message : String(err || '');
+        if (!this.isConnected && (errMsg.includes('Negotiation of connection') || errMsg.includes('ICE failed'))) {
+          this._stopConnectionTimeout();
+          if (this.callbacks.onError) {
+            this.callbacks.onError({
+              type: 'ice-failed',
+              message: 'Negosiasi WebRTC gagal (jalur P2P diblokir jaringan).'
+            });
+          }
+          this.disconnect();
+          return;
+        }
         this._handleDisconnect();
       });
     }
@@ -497,9 +553,12 @@
       if (wasConnected && this.callbacks.onDisconnected) {
         this.callbacks.onDisconnected();
       } else if (!wasConnected && this.callbacks.onError) {
+        const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
         this.callbacks.onError({
-          type: 'peer-unavailable',
-          message: 'Koneksi ke host terputus sebelum berhasil terhubung'
+          type: isOffline ? 'offline' : 'peer-unavailable',
+          message: isOffline
+            ? 'Koneksi internet terputus saat mencoba menghubungkan room.'
+            : 'Koneksi ke Host terputus sebelum handshake selesai.'
         });
       }
     }

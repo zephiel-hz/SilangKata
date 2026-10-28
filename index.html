@@ -292,7 +292,7 @@
     </div>
   </div>
 
-  <!-- DISCONNECT OVERLAY -->
+  <!-- DISCONNECT OVERLAY (Saat Game Berlangsung) -->
   <div id="disconnect-overlay" class="modal-overlay">
     <div class="glass-panel text-center" style="max-width: 360px;">
       <h3 style="color: var(--pink); font-size: 1.3rem; margin-bottom: 8px;">PARTNER TERPUTUS</h3>
@@ -305,13 +305,42 @@
     </div>
   </div>
 
+  <!-- MODAL ERROR KONEKSI CO-OP (Penjelasan Jelas & Solutif) -->
+  <div id="modal-conn-error" class="modal-overlay">
+    <div class="glass-panel" style="max-width: 400px; text-align: left; padding: 22px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <span style="font-size: 1.8rem; line-height: 1;">⚠️</span>
+        <div>
+          <h3 id="modal-error-title" style="color: var(--pink); font-size: 1.15rem; margin: 0; font-weight: 700;">Gagal Terhubung ke Room</h3>
+          <span id="modal-error-code" style="font-size: 0.72rem; color: var(--text-muted); font-family: monospace; letter-spacing: 0.5px;">KODE: ERR_CONNECTION</span>
+        </div>
+      </div>
+
+      <p id="modal-error-desc" style="font-size: 0.9rem; line-height: 1.5; margin-bottom: 14px; color: var(--text-primary);">
+        Room tidak ditemukan atau Host sudah keluar.
+      </p>
+
+      <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--surface-border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: var(--cyan); margin-bottom: 6px; letter-spacing: 0.5px;">💡 SARAN PENYELESAIAN:</div>
+        <ul id="modal-error-tips" style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; padding-left: 18px; line-height: 1.6;">
+          <li>Periksa kembali 6 karakter kode room.</li>
+          <li>Pastikan Host masih membuka layar room dan belum keluar.</li>
+        </ul>
+      </div>
+
+      <button id="btn-close-error-modal" class="btn btn-primary" style="width: 100%;">
+        MENGERTI & COBA LAGI
+      </button>
+    </div>
+  </div>
+
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="toast">Notifikasi</div>
 
   <!-- Scripts -->
   <script src="vendor/peerjs.min.js"></script>
-  <script src="multiplayer.js?v=3.1"></script>
-  <script src="app.js?v=3.1"></script>
+  <script src="multiplayer.js?v=3.2"></script>
+  <script src="app.js?v=3.2"></script>
   <script>
     // Register Service Worker jika didukung
     if ('serviceWorker' in navigator) {

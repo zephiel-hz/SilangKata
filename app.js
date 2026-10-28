@@ -644,11 +644,17 @@
       this.btnShareResult = document.getElementById('btn-share-result');
       this.btnResultMenu = document.getElementById('btn-result-menu');
 
-      // Overlays
+      // Overlays & Error Modals
       this.loadingOverlay = document.getElementById('loading-overlay');
       this.loadingText = document.getElementById('loading-text');
       this.disconnectOverlay = document.getElementById('disconnect-overlay');
       this.btnDisconnectMenu = document.getElementById('btn-disconnect-menu');
+      this.modalConnError = document.getElementById('modal-conn-error');
+      this.modalErrorTitle = document.getElementById('modal-error-title');
+      this.modalErrorCode = document.getElementById('modal-error-code');
+      this.modalErrorDesc = document.getElementById('modal-error-desc');
+      this.modalErrorTips = document.getElementById('modal-error-tips');
+      this.btnCloseErrorModal = document.getElementById('btn-close-error-modal');
       this.toastEl = document.getElementById('toast');
     }
 
@@ -661,6 +667,14 @@
       this.btnLobbyBack.addEventListener('click', () => this.showScreen('screen-menu'));
       this.btnCreateRoom.addEventListener('click', () => this.handleCreateRoom());
       this.btnJoinRoom.addEventListener('click', () => this.handleJoinRoom());
+
+      // Error Modal
+      if (this.btnCloseErrorModal) {
+        this.btnCloseErrorModal.addEventListener('click', () => {
+          if (this.modalConnError) this.modalConnError.classList.remove('active');
+          this.showScreen('screen-lobby');
+        });
+      }
 
       // Room
       if (this.btnShareLink) this.btnShareLink.addEventListener('click', () => this.shareRoomLink());
@@ -882,7 +896,7 @@
         // onError
         (err) => {
           this.hideLoading();
-          this.showToast('Gagal menghubungkan room ke server: ' + (err.type || err.message || 'Error'));
+          this.showConnectionError(err, code, true);
         }
       );
     }
@@ -1024,23 +1038,119 @@
         // onError
         (err) => {
           this.hideLoading();
-          let message = 'Gagal bergabung ke room.';
-          const errType = err && err.type ? err.type : '';
-          if (errType === 'peer-unavailable') {
-            message = `Room "${cleanCode}" tidak ditemukan atau Host sudah keluar/offline.`;
-          } else if (errType === 'room-full') {
-            message = 'Room sudah penuh (kapasitas maksimal tercapai).';
-          } else if (errType === 'timeout') {
-            message = 'Waktu koneksi habis. Pastikan Host masih membuka room.';
-          } else if (errType === 'network') {
-            message = 'Koneksi internet bermasalah. Periksa jaringanmu.';
-          } else if (errType) {
-            message = `Koneksi gagal (${errType}). Coba lagi.`;
-          }
-          this.showToast(message, 4500);
-          this.showScreen('screen-lobby');
+          this.showConnectionError(err, cleanCode, false);
         }
       );
+    }
+
+    showConnectionError(err, cleanCode = '', isHost = false) {
+      this.hideLoading();
+
+      const errType = (err && err.type) ? String(err.type).toLowerCase() : 'unknown';
+      let title = isHost ? 'Gagal Membuat Room' : 'Gagal Bergabung ke Room';
+      let codeLabel = `ERR_${errType.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
+      let description = '';
+      let tips = [];
+
+      switch (errType) {
+        case 'peer-unavailable':
+          title = 'Room Tidak Ditemukan';
+          codeLabel = 'ERR_ROOM_NOT_FOUND';
+          description = `Room dengan kode "${cleanCode || '------'}" tidak ditemukan di server atau Host telah keluar/menutup browser.`;
+          tips = [
+            'Pastikan kode room yang dimasukkan persis sama (6 karakter huruf & angka).',
+            'Pastikan Host (temanmu) masih membuka layar room dan berstatus ONLINE.',
+            'Jika Host baru saja membuat room, tunggu 2–3 detik lalu coba tekan "GABUNG ROOM" kembali.'
+          ];
+          break;
+
+        case 'room-full':
+          title = 'Kapasitas Room Sudah Penuh';
+          codeLabel = 'ERR_ROOM_CAPACITY_FULL';
+          description = `Room "${cleanCode}" sudah mencapai batas maksimal pemain yang ditentukan oleh Host.`;
+          tips = [
+            'Minta Host membuat room baru dengan kapasitas yang lebih besar (hingga 6 pemain).',
+            'Tunggu hingga salah satu pemain meninggalkan room.'
+          ];
+          break;
+
+        case 'ice-failed':
+        case 'webrtc':
+          title = 'Koneksi P2P Diblokir Jaringan';
+          codeLabel = 'ERR_WEBRTC_ICE_BLOCKED';
+          description = 'Jaringan internet yang kamu gunakan memblokir jalur komunikasi langsung (WebRTC/P2P) antar perangkat.';
+          tips = [
+            'Jika menggunakan WiFi kantor, kampus, atau sekolah, coba beralih ke paket data seluler.',
+            'Nonaktifkan sementara VPN, AdBlocker, atau firewall ketat di HP/komputer.',
+            'Gunakan browser standar (Chrome, Edge, Safari, Firefox) dan hindari peramban in-app medsos.'
+          ];
+          break;
+
+        case 'offline':
+          title = 'Perangkat Sedang Offline';
+          codeLabel = 'ERR_NETWORK_OFFLINE';
+          description = 'Tidak ada sambungan internet aktif yang terdeteksi di perangkatmu.';
+          tips = [
+            'Periksa kuota data seluler atau koneksi WiFi kamu.',
+            'Coba matikan lalu nyalakan kembali Mode Pesawat (Airplane Mode) untuk menyegarkan sinyal.'
+          ];
+          break;
+
+        case 'timeout':
+          title = 'Waktu Tunggu Habis (Timeout)';
+          codeLabel = 'ERR_CONNECTION_TIMEOUT';
+          description = 'Waktu tunggu negosiasi room habis karena server lambat merespons atau sinyal lemah.';
+          tips = [
+            'Sinyal internet salah satu pemain mungkin sedang tidak stabil.',
+            'Pastikan layar HP Host menyala dan tidak dalam mode sleep/background.',
+            'Coba tekan tombol "GABUNG ROOM" sekali lagi.'
+          ];
+          break;
+
+        case 'unavailable-id':
+          title = 'Kode Room Bertabrakan';
+          codeLabel = 'ERR_ROOM_ID_IN_USE';
+          description = 'Kode room ini secara kebetulan sedang aktif digunakan oleh sesi lain.';
+          tips = [
+            'Kembali ke menu dan buat room baru untuk menghasilkan kode room acak yang baru.'
+          ];
+          break;
+
+        default:
+          title = isHost ? 'Gagal Membuka Room' : 'Kendala Koneksi Room';
+          codeLabel = `ERR_${errType.toUpperCase()}`;
+          description = (err && err.message)
+            ? err.message
+            : 'Terjadi kendala saat menghubungkan komunikasi antar pemain.';
+          tips = [
+            'Muat ulang (refresh) halaman lalu coba lagi.',
+            'Gunakan tautan langsung (klik link share) daripada mengetik kode manual.',
+            'Pastikan kedua perangkat memiliki koneksi internet aktif.'
+          ];
+      }
+
+      this._renderErrorModal({ title, codeLabel, description, tips });
+    }
+
+    _renderErrorModal({ title, codeLabel, description, tips }) {
+      if (this.modalErrorTitle) this.modalErrorTitle.textContent = title;
+      if (this.modalErrorCode) this.modalErrorCode.textContent = `KODE: ${codeLabel}`;
+      if (this.modalErrorDesc) this.modalErrorDesc.textContent = description;
+
+      if (this.modalErrorTips) {
+        this.modalErrorTips.innerHTML = '';
+        tips.forEach(t => {
+          const li = document.createElement('li');
+          li.textContent = t;
+          this.modalErrorTips.appendChild(li);
+        });
+      }
+
+      if (this.modalConnError) {
+        this.modalConnError.classList.add('active');
+      } else {
+        this.showToast(`${title}: ${description}`, 5000);
+      }
     }
 
     checkUrlJoinParams() {
