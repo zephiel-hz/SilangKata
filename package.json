@@ -1,0 +1,24 @@
+{
+  "name": "silangkata",
+  "version": "1.0.0",
+  "description": "SilangKata — Teka-teki silang kolaboratif. Main TTS seru berdua.",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve .",
+    "test": "node --check api/generate-puzzle.js && node --check app.js && node --check multiplayer.js && node --check sw.js && node test.js"
+  },
+  "keywords": [
+    "crossword",
+    "teka-teki-silang",
+    "tts",
+    "co-op",
+    "multiplayer",
+    "peerjs",
+    "webrtc",
+    "pwa",
+    "gemini-api"
+  ],
+  "author": "SilangKata Team",
+  "license": "MIT"
+}
+
