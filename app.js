@@ -1319,6 +1319,13 @@
           this.refreshSolvedVisuals();
           break;
 
+        case 'scoreUpdate':
+          if (msg.score !== undefined) {
+            this.score = msg.score;
+            this.hudScore.textContent = this.score;
+          }
+          break;
+
         case 'finish':
           this.score = msg.finalScore;
           if (msg.elapsedSeconds !== undefined) {
@@ -2162,24 +2169,60 @@
 
     useHint() {
       if (this.isGameOver || !this.puzzle) return;
-      if (this.hintUsed) {
-        this.showToast('Bantuan huruf sudah digunakan ronde ini!');
+
+      // 1. Syarat pengurangan poin: Butuh minimal 50 poin
+      if (this.score < 50) {
+        sound.playError();
+        triggerHaptic([60, 60]);
+        this.showToast(`Poin tidak cukup! Butuh minimal 50 poin untuk memakai bantuan (Poinmu: ${this.score}).`, 3500);
+        if (this.btnHint) {
+          this.btnHint.classList.add('shake');
+          setTimeout(() => this.btnHint.classList.remove('shake'), 400);
+        }
         return;
       }
 
-      // Cari kata yang belum tuntas
+      // 2. Cari kata yang belum tuntas
       const unsolvedWords = this.puzzle.words.filter(w => !w.solved);
-      if (unsolvedWords.length === 0) return;
+      if (unsolvedWords.length === 0) {
+        this.showToast('Semua kata sudah terisi dengan benar!');
+        return;
+      }
 
-      const randomWord = unsolvedWords[Math.floor(Math.random() * unsolvedWords.length)];
-      // Cari huruf yang belum terisi atau salah
+      // Utamakan kata yang saat ini sedang aktif dipilih pemain
+      let targetWord = null;
+      if (this.activeCell) {
+        const activeKey = `${this.activeCell.r}-${this.activeCell.c}`;
+        const activeCellData = this.puzzle.cells[activeKey];
+        if (activeCellData) {
+          const wIdx = this.activeDir === 'across' ? activeCellData.acrossWordIdx : activeCellData.downWordIdx;
+          const candidate = (wIdx !== null && wIdx !== undefined) ? this.puzzle.words[wIdx] : null;
+          if (candidate && !candidate.solved) {
+            const hasEmpty = Array.from(candidate.word).some((ch, i) => {
+              const r = candidate.dir === 'across' ? candidate.row : candidate.row + i;
+              const c = candidate.dir === 'across' ? candidate.col + i : candidate.col;
+              return this.userGrid[`${r}-${c}`] !== ch;
+            });
+            if (hasEmpty) {
+              targetWord = candidate;
+            }
+          }
+        }
+      }
+
+      // Jika tidak ada kata aktif yang belum selesai, pilih salah satu secara acak
+      if (!targetWord) {
+        targetWord = unsolvedWords[Math.floor(Math.random() * unsolvedWords.length)];
+      }
+
+      // Cari kotak yang belum terisi atau salah di targetWord
       const emptyIndices = [];
-      for (let i = 0; i < randomWord.word.length; i++) {
-        const r = randomWord.dir === 'across' ? randomWord.row : randomWord.row + i;
-        const c = randomWord.dir === 'across' ? randomWord.col + i : randomWord.col;
+      for (let i = 0; i < targetWord.word.length; i++) {
+        const r = targetWord.dir === 'across' ? targetWord.row : targetWord.row + i;
+        const c = targetWord.dir === 'across' ? targetWord.col + i : targetWord.col;
         const key = `${r}-${c}`;
-        if (this.userGrid[key] !== randomWord.word[i]) {
-          emptyIndices.push({ r, c, char: randomWord.word[i] });
+        if (this.userGrid[key] !== targetWord.word[i]) {
+          emptyIndices.push({ r, c, char: targetWord.word[i] });
         }
       }
 
@@ -2188,12 +2231,14 @@
         const key = `${chosen.r}-${chosen.c}`;
         this.userGrid[key] = chosen.char;
         this.cellSources[key] = 'self';
-        this.hintUsed = true;
-        this.score = Math.max(0, this.score - 50);
+
+        // Pengurangan 50 poin
+        this.score -= 50;
         this.hudScore.textContent = this.score;
 
         this.updateCellVisual(chosen.r, chosen.c);
         sound.playCorrect();
+        triggerHaptic([30, 40]);
         this.showToast(`💡 Buka huruf '${chosen.char}' (-50 Poin)`);
 
         if (this.mode === 'coop') {
@@ -2203,6 +2248,10 @@
             c: chosen.c,
             letter: chosen.char,
             role: this.role
+          });
+          window.MP.send({
+            type: 'scoreUpdate',
+            score: this.score
           });
         }
 
