@@ -19,6 +19,7 @@
   - Setelah ronde selesai, semua pemain dapat memilih **Main Lagi**; room kembali ke pengaturan setelah seluruh pemain terhubung menyetujui.
 - **Generator Kata Otomatis (Multi-Provider AI)**:
   - Generate puzzle baru setiap ronde via Vercel Serverless Function dengan provider AI yang tersedia.
+  - Petunjuk AI dan seluruh kamus fallback ditulis sebagai kalimat Bahasa Indonesia yang jelas, alami, dan spesifik; hasil AI yang berupa frasa terpotong atau menyebut jawabannya disaring.
   - Riwayat hingga 80 jawaban dan petunjuk terbaru disimpan lokal per tema untuk mengurangi pengulangan; jika AI tidak tersedia, aplikasi memberi tahu saat memakai kamus fallback.
 - **Client-Side Crossword Grid Engine**:
   - Algoritma penyusunan grid dinamis dan acak di browser tanpa kompilasi/bundler, menjamin bentuk yang selalu bervariasi setiap ronde.

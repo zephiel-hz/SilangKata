@@ -65,6 +65,53 @@ async function run() {
     throw new Error('Fallback repeated a previously used clue');
   }
   console.log('✓ Fallback menghindari jawaban dan clue yang telah digunakan.');
+  const apiCode = fs.readFileSync('api/generate-puzzle.js', 'utf8');
+  const clientAppCode = fs.readFileSync('app.js', 'utf8');
+  const serverFallbackMatch = apiCode.match(/const FALLBACK_DICTIONARIES = (\{[\s\S]*?\n\});/);
+  const clientFallbackMatch = clientAppCode.match(/const CLIENT_FALLBACKS = (\{[\s\S]*?\n  \};)/);
+  if (!serverFallbackMatch || !clientFallbackMatch) {
+    throw new Error('Server or client fallback dictionary missing');
+  }
+  const serverFallbacks = eval('(' + serverFallbackMatch[1] + ')');
+  const clientFallbacks = eval('(' + clientFallbackMatch[1].replace(/;$/, '') + ')');
+  for (const [source, foods] of [
+    ['server', serverFallbacks.makanan],
+    ['client', clientFallbacks.makanan]
+  ]) {
+    const lontong = foods.find(item => item.word === 'LONTONG');
+    if (!lontong || !/daun pisang/i.test(lontong.clue) || !/direbus/i.test(lontong.clue) || !/[.!?]$/.test(lontong.clue)) {
+      throw new Error(`Lontong fallback clue must explain how it is made in ${source}`);
+    }
+  }
+  const completeSentencePredicate = /\b(?:adalah|merupakan|dapat|bisa|digunakan|berfungsi|berasal|terletak|hidup|memiliki|mempunyai|dikenal|terkenal|termasuk|berbentuk|terbuat|terdiri|menjadi|membantu|menghasilkan|menyebabkan|menyimpan|menyampaikan|menghubungkan|membawa|mengukur|mengatur|menjaga|terbentuk|tumbuh|bergerak|mengalir|berlangsung|bernapas|dipakai|ditemukan|disebut|membuat|melindungi|berperan|ditulis|dibuat|diolah|dimakan|memakan|makan|dibudidayakan|menyusun|mengandung|terdapat|memengaruhi|mempengaruhi|menentukan|memberi|menunjukkan|memproduksi|meningkat|menurun|menyebar|terjadi|mengalami|memerlukan|dihasilkan|ditandai|menempati|berkembang|menyukai|menyajikan|menyusui|menunjuk|mengangkut|menggunakan|menggerakkan|mengelilingi|menyediakan|menandai|mencakup|memancarkan|menyerap|terbuka|tertutup|berwarna|berukuran|berisi|berbahan|berciri|berada|memasuki|memasak|direbus|dipanggang|ditusuk|dimasak|ditempuh|berjalan|berlari|berenang|bertelur|menetas|membentuk|mengubah|terbagi|bersifat|mencapai|menempuh|menciptakan|membeli|menjual|bertukar|mendukung|menyebut|tercatat|berkaitan|menyelesaikan)\b/i;
+  const fallbackClueFailures = [];
+  for (const [source, dictionaries] of [
+    ['server', serverFallbacks],
+    ['client', clientFallbacks]
+  ]) {
+    for (const [theme, entries] of Object.entries(dictionaries)) {
+      if (!Array.isArray(entries) || entries.length < 10) {
+        throw new Error(`${source} fallback for ${theme} is missing or insufficient`);
+      }
+      for (const { word, clue } of entries) {
+        const tokens = clue.trim().split(/\s+/);
+        if (
+          !/[.!?]$/.test(clue) ||
+          clue.length < 24 ||
+          clue.length > 130 ||
+          tokens.length < 5 ||
+          (!completeSentencePredicate.test(clue) && !/\bini\b/i.test(clue)) ||
+          new RegExp(`\\b${word}\\b`, 'i').test(clue)
+        ) {
+          fallbackClueFailures.push(`${source}/${theme}/${word}: "${clue}"`);
+        }
+        if (fallbackClueFailures.length) {
+          throw new Error(`Fallback clues need review:\n${fallbackClueFailures.join('\n')}`);
+        }
+      }
+    }
+  }
+  console.log('✓ Seluruh clue fallback server dan client berupa kalimat utuh di semua tema.');
 
   const originalFetch = global.fetch;
   process.env.GROQ_API_KEY = 'test-key';
@@ -77,15 +124,17 @@ async function run() {
             theme: 'hewan',
             words: [
               { word: 'KUCING', clue: 'Hewan berkaki empat suka mendengkur dan makan ikan' },
-              { word: 'RUSA', clue: 'Mamalia bertanduk yang bergerak lincah di hutan' },
-              { word: 'SIPUT', clue: 'Moluska bercangkang yang bergerak sangat lambat' },
-              { word: 'KODOK', clue: 'Amfibi bersuara nyaring setelah hujan turun' },
-              { word: 'KUPU', clue: 'Serangga bersayap indah yang berasal dari ulat' },
-              { word: 'KRAIT', clue: 'Ular berbisa dengan gelang hitam putih di tubuh' },
-              { word: 'PAUS', clue: 'Mamalia terbesar yang hidup di lautan' },
-              { word: 'RAYAP', clue: 'Serangga sosial yang memakan kayu kering' },
-              { word: 'KEONG', clue: 'Hewan lunak bercangkang yang hidup di sawah' },
-              { word: 'TUPAI', clue: 'Pengerat kecil lincah yang menyimpan biji-bijian' }
+              { word: 'RUSA', clue: 'Mamalia ini memiliki tanduk dan hidup di kawasan hutan.' },
+              { word: 'SIPUT', clue: 'Hewan bercangkang ini bergerak lambat dengan bantuan lendir.' },
+              { word: 'KODOK', clue: 'Amfibi ini hidup di dua alam dan bersuara setelah hujan.' },
+              { word: 'KUPU', clue: 'Serangga ini mengalami perubahan bentuk sebelum menjadi dewasa.' },
+              { word: 'KRAIT', clue: 'Ular berbisa ini memiliki pola belang pada tubuhnya.' },
+              { word: 'PAUS', clue: 'Mamalia laut ini bernapas dengan paru-paru dan menyusui anaknya.' },
+              { word: 'RAYAP', clue: 'Serangga ini hidup berkoloni dan memakan bahan berselulosa.' },
+              { word: 'KEONG', clue: 'Hewan lunak ini memiliki cangkang dan bergerak perlahan.' },
+              { word: 'TUPAI', clue: 'Hewan ini hidup di pepohonan dan menyimpan makanan untuk persediaan.' },
+              { word: 'BADAK', clue: 'Mamalia ini memiliki cula dan hidup di kawasan Asia atau Afrika.' },
+              { word: 'SEMUT', clue: 'Serangga kecil hidup berkoloni' }
             ]
           })
         }
@@ -111,7 +160,13 @@ async function run() {
   if (novelAiPuzzle.data.words.some(item => avoidWords.includes(item.word))) {
     throw new Error('AI response repeated a previously used answer');
   }
-  console.log('✓ Hasil AI disaring dari jawaban lama dan diisi kandidat baru.');
+  if (novelAiPuzzle.data.words.some(item => !/[.!?]$/.test(item.clue) || item.clue.length < 24)) {
+    throw new Error('AI output must use clear, complete Indonesian clue sentences');
+  }
+  if (novelAiPuzzle.data.words.some(item => ['BADAK', 'SEMUT'].includes(item.word))) {
+    throw new Error('AI output must not leak the answer or keep fragment-style clues');
+  }
+  console.log('✓ Hasil AI disaring dari jawaban lama dan memakai clue berbentuk kalimat utuh.');
 
   // Kembalikan keys
   if (savedKeys.GEMINI) process.env.GEMINI_API_KEY = savedKeys.GEMINI;
@@ -129,7 +184,6 @@ async function run() {
 
   const fallbackMatch = appCode.match(/const CLIENT_FALLBACKS = (\{[\s\S]*?\n  \};)/);
   if (!fallbackMatch) throw new Error('CLIENT_FALLBACKS not found in app.js');
-  const clientFallbacks = eval('(' + fallbackMatch[1].replace(/;$/, '') + ')');
   for (const theme of ['hewan', 'buah', 'transportasi', 'makanan', 'teknologi', 'olahraga', 'umum', 'ipa', 'ips', 'campuran']) {
     if (!clientFallbacks[theme] || clientFallbacks[theme].length < 10) {
       throw new Error(`Client fallback for ${theme} missing or insufficient words`);
@@ -312,11 +366,20 @@ async function run() {
       !indexHtml.includes('play-again-status') ||
       !appCode.includes("this.btnPlayAgain.style.display = this.mode === 'coop' ? 'inline-flex' : 'none'") ||
       !appCode.includes("this.btnPlayAgain.addEventListener('click', () => this.voteToPlayAgain())") ||
+      !appCode.includes('`${count}/${total} orang ingin main lagi!`') ||
+      !appCode.includes('votes.length === connectedPlayerNums.size') ||
       !appCode.includes('this.registerPlayAgainVote(pNum)') ||
       !appCode.includes('this.enterRoomAfterPlayAgain()') ||
       !mpCode.includes("data.type === 'play-again-vote'") ||
       !mpCode.includes('resetReadyStates()')) {
-    throw new Error('Co-op rematch must wait for unanimous votes, then return all players to room settings');
+    throw new Error('Co-op rematch must show vote progress and wait for unanimous consent');
+  }
+  const approvalHandler = appCode.match(/case 'play-again-approved':([\s\S]*?)break;/);
+  if (!approvalHandler ||
+      !approvalHandler[1].includes('this.enterRoomAfterPlayAgain()') ||
+      approvalHandler[1].includes('handleHostStartGame') ||
+      approvalHandler[1].includes("type: 'init'")) {
+    throw new Error('Unanimous rematch approval must return to room settings without starting a game');
   }
   console.log('✓ Konsistensi warna P1–P6 dan isolasi skor terverifikasi.');
 

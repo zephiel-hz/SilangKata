@@ -99,228 +99,228 @@ const puzzleCache = new Map();
 // Kamus fallback Bahasa Indonesia berkualitas tinggi jika API key belum ada / kuota habis
 const FALLBACK_DICTIONARIES = {
   hewan: [
-    { word: 'KUCING', clue: 'Hewan berkaki empat suka mendengkur dan makan ikan' },
-    { word: 'KELINCI', clue: 'Mamalia bertelinga panjang yang suka wortel' },
-    { word: 'KAMBING', clue: 'Hewan berkaki empat yang suka makan rumput dan bersuara mbe' },
-    { word: 'BURUNG', clue: 'Unggas bersayap yang dapat terbang bebas di angkasa' },
-    { word: 'GAJAH', clue: 'Hewan darat raksasa berbelalai panjang dan bertaring gading' },
-    { word: 'SINGA', clue: 'Raja hutan bersurai lebat pemangsa tangguh di padang savana' },
-    { word: 'HARIMAU', clue: 'Kucing besar bermotif loreng oranye dan hitam' },
-    { word: 'ZEBRA', clue: 'Kuda liar afrika berbelang hitam putih khas' },
-    { word: 'MONYET', clue: 'Primata cerdas berekor yang lincah bergelantungan di pohon' },
-    { word: 'JERAPAH', clue: 'Hewan tertinggi di dunia dengan leher yang sangat panjang' },
-    { word: 'LUMBA', clue: 'Mamalia air yang cerdas, ramah, dan bernapas dengan paru' },
-    { word: 'BADAK', clue: 'Hewan bercula satu atau dua bercula keras di ujung hidung' },
-    { word: 'PENGUIN', clue: 'Burung kutub berbulu hitam putih yang mahir berenang' },
-    { word: 'ELANG', clue: 'Burung pemangsa dengan penglihatan tajam dan cakar kuat' },
-    { word: 'BEBEK', clue: 'Unggas air paruh pipih yang suka berenang dan bersuara kwek' },
-    { word: 'BERUANG', clue: 'Mamalia berbulu tebal pencinta madu dan ikan salmon' },
-    { word: 'LANDAK', clue: 'Hewan pengerat bertubuh duri tajam pelindung diri' },
-    { word: 'KANGGURU', clue: 'Marsupial khas Australia pelompat dengan kantung di perut' },
-    { word: 'TUPAI', clue: 'Hewan pengerat berekor lebat pemanjat pohon yang suka kacang' },
-    { word: 'KOMODO', clue: 'Kadal raksasa purba endemik pulau Nusa Tenggara' },
-    { word: 'KURA', clue: 'Reptil bercangkang keras pembawa rumah di punggungnya' },
-    { word: 'PANDA', clue: 'Mamalia berbulu hitam putih dari Tiongkok pemakan bambu' }
+    { word: 'KUCING', clue: 'Hewan berkaki empat ini suka mendengkur dan sering memakan ikan.' },
+    { word: 'KELINCI', clue: 'Mamalia bertelinga panjang ini dikenal suka memakan wortel.' },
+    { word: 'KAMBING', clue: 'Hewan berkaki empat ini memakan rumput dan mengeluarkan suara embikan.' },
+    { word: 'BURUNG', clue: 'Unggas ini memiliki sayap yang dapat membantunya terbang di angkasa.' },
+    { word: 'GAJAH', clue: 'Hewan darat berukuran besar ini memiliki belalai panjang dan gading.' },
+    { word: 'SINGA', clue: 'Pemangsa tangguh di savana ini dikenal sebagai raja hutan dan memiliki surai lebat.' },
+    { word: 'HARIMAU', clue: 'Kucing besar ini memiliki bulu oranye dengan pola belang hitam.' },
+    { word: 'ZEBRA', clue: 'Kuda liar dari Afrika ini memiliki belang hitam dan putih.' },
+    { word: 'MONYET', clue: 'Primata berekor ini dikenal cerdas dan lincah saat bergelantungan di pohon.' },
+    { word: 'JERAPAH', clue: 'Hewan ini dikenal sebagai yang tertinggi di dunia karena lehernya sangat panjang.' },
+    { word: 'LUMBA', clue: 'Mamalia laut ini dikenal cerdas, bernapas dengan paru-paru, dan sering dianggap ramah.' },
+    { word: 'BADAK', clue: 'Hewan ini memiliki satu atau dua cula keras di bagian hidungnya.' },
+    { word: 'PENGUIN', clue: 'Burung yang hidup di wilayah kutub ini berbulu hitam putih dan pandai berenang.' },
+    { word: 'ELANG', clue: 'Burung pemangsa ini memiliki penglihatan tajam dan cakar yang kuat.' },
+    { word: 'BEBEK', clue: 'Unggas air ini memiliki paruh pipih, suka berenang, dan mengeluarkan suara kwek.' },
+    { word: 'BERUANG', clue: 'Mamalia berbulu tebal ini dikenal suka mencari madu dan ikan.' },
+    { word: 'LANDAK', clue: 'Hewan pengerat ini memiliki duri tajam yang digunakan untuk melindungi diri.' },
+    { word: 'KANGGURU', clue: 'Marsupial khas Australia ini melompat dan memiliki kantung di bagian perut.' },
+    { word: 'TUPAI', clue: 'Hewan pengerat berekor lebat ini pandai memanjat pohon dan menyukai kacang.' },
+    { word: 'KOMODO', clue: 'Kadal raksasa purba ini hidup secara alami di wilayah Nusa Tenggara.' },
+    { word: 'KURA', clue: 'Reptil ini memiliki cangkang keras yang melindungi tubuhnya.' },
+    { word: 'PANDA', clue: 'Mamalia dari Tiongkok ini berbulu hitam putih dan banyak memakan bambu.' }
   ],
   buah: [
-    { word: 'MANGGA', clue: 'Buah tropis manis dengan daging oranye dan biji pipih' },
-    { word: 'PISANG', clue: 'Buah berkulit kuning lembut kaya kalium kesukaan monyet' },
-    { word: 'JERUK', clue: 'Buah bulat berkulit oranye kaya vitamin C dengan rasa segar' },
-    { word: 'APEL', clue: 'Buah renyah berwarna merah atau hijau lambang kesehatan' },
-    { word: 'MELON', clue: 'Buah beraroma wangi manis dengan jaring di permukaan kulitnya' },
-    { word: 'SEMANGKA', clue: 'Buah besar berkulit hijau berair banyak dengan daging merah' },
-    { word: 'DURIAN', clue: 'Raja buah beraroma tajam menyengat dan berkulit duri keras' },
-    { word: 'PEPAYA', clue: 'Buah lonjong oranye manis dengan biji hitam bulat kecil' },
-    { word: 'ANGGUR', clue: 'Buah bulat kecil bergelantungan dalam tandan ungu atau hijau' },
-    { word: 'NANAS', clue: 'Buah berkulit sisik kasar dengan mahkota daun berduri' },
-    { word: 'LEMON', clue: 'Jeruk lonjong kuning cerah dengan rasa asam pekat' },
-    { word: 'SALAK', clue: 'Buah tropis dengan kulit bersisik mirip kulit ular' },
-    { word: 'JAMBU', clue: 'Buah biji renyah kaya vitamin C berkulit hijau atau merah' },
-    { word: 'ALPUKAT', clue: 'Buah berdaging mentega hijau lembut berlemak sehat' },
-    { word: 'LECI', clue: 'Buah bulat kecil kulit merah berbintik daging putih bening' },
-    { word: 'RAMBUTAN', clue: 'Buah berkulit merah berbulu lebat berdaging manis berair' },
-    { word: 'MANGGIS', clue: 'Ratu buah berkulit ungu tebal berdaging putih bersegmen' },
-    { word: 'SIRSAK', clue: 'Buah berkulit duri lembut berdaging putih asam segar' },
-    { word: 'KELENGKENG', clue: 'Buah bulat berkulit cokelat tipis manis berbiji hitam mengilat' },
-    { word: 'BELIMBING', clue: 'Buah berpenampang bintang saat diiris melintang segar berair' },
-    { word: 'KEDONDONG', clue: 'Buah hijau asam renyah berakar serat di bijinya' },
-    { word: 'MARKISA', clue: 'Buah berbulir kuning asam segar beraroma tajam' }
+    { word: 'MANGGA', clue: 'Buah tropis ini terasa manis, berdaging oranye, dan memiliki biji pipih.' },
+    { word: 'PISANG', clue: 'Buah berkulit kuning ini bertekstur lembut dan kaya akan kalium.' },
+    { word: 'JERUK', clue: 'Buah bulat berkulit oranye ini terasa segar dan kaya akan vitamin C.' },
+    { word: 'APEL', clue: 'Buah ini bertekstur renyah, dapat berwarna merah atau hijau, dan sering dianggap menyehatkan.' },
+    { word: 'MELON', clue: 'Buah ini beraroma harum, terasa manis, dan memiliki pola seperti jaring pada kulitnya.' },
+    { word: 'SEMANGKA', clue: 'Buah berukuran besar ini berkulit hijau, berdaging merah, dan mengandung banyak air.' },
+    { word: 'DURIAN', clue: 'Buah yang dijuluki raja buah ini memiliki aroma tajam dan kulit berduri keras.' },
+    { word: 'PEPAYA', clue: 'Buah lonjong ini berdaging oranye, terasa manis, dan memiliki biji hitam kecil.' },
+    { word: 'ANGGUR', clue: 'Buah kecil berbentuk bulat ini tumbuh dalam tandan yang dapat berwarna ungu atau hijau.' },
+    { word: 'NANAS', clue: 'Buah ini memiliki kulit kasar bersisik dan mahkota daun yang berduri.' },
+    { word: 'LEMON', clue: 'Buah berbentuk lonjong dan berwarna kuning cerah ini memiliki rasa asam pekat.' },
+    { word: 'SALAK', clue: 'Buah tropis ini memiliki kulit bersisik yang menyerupai kulit ular.' },
+    { word: 'JAMBU', clue: 'Buah ini dapat berkulit hijau atau merah dan dikenal kaya vitamin C.' },
+    { word: 'ALPUKAT', clue: 'Buah ini berdaging hijau lembut dan mengandung lemak sehat.' },
+    { word: 'LECI', clue: 'Buah kecil berbentuk bulat ini berkulit merah berbintik dan berdaging putih bening.' },
+    { word: 'RAMBUTAN', clue: 'Buah berkulit merah ini memiliki rambut lebat serta daging yang manis dan berair.' },
+    { word: 'MANGGIS', clue: 'Buah yang dijuluki ratu buah ini berkulit ungu tebal dan berdaging putih bersegmen.' },
+    { word: 'SIRSAK', clue: 'Buah ini memiliki kulit berduri lembut, daging putih, dan rasa asam yang segar.' },
+    { word: 'KELENGKENG', clue: 'Buah bulat ini berkulit cokelat tipis, terasa manis, dan memiliki biji hitam mengilat.' },
+    { word: 'BELIMBING', clue: 'Buah ini tampak seperti bintang saat diiris melintang serta terasa segar dan berair.' },
+    { word: 'KEDONDONG', clue: 'Buah hijau ini terasa asam dan renyah serta memiliki biji berserat.' },
+    { word: 'MARKISA', clue: 'Buah ini memiliki bulir kuning, rasa asam segar, dan aroma yang tajam.' }
   ],
   teknologi: [
-    { word: 'KOMPUTER', clue: 'Perangkat elektronik pemroses data digital' },
-    { word: 'INTERNET', clue: 'Jaringan global penghubung komputer di seluruh dunia' },
-    { word: 'ROBOT', clue: 'Mesin otomatis yang dapat menjalankan perintah terprogram' },
-    { word: 'SATELIT', clue: 'Benda pengorbit bumi untuk transmisi sinyal dan cuaca' },
-    { word: 'SERVER', clue: 'Komputer pusat penyedia layanan data bagi client' },
-    { word: 'KAMERA', clue: 'Alat optik perekam gambar diam atau bergerak' },
-    { word: 'MONITOR', clue: 'Layar penampil visual output komputer' },
-    { word: 'KEYBOARD', clue: 'Papan tombol ketik input huruf dan angka' },
-    { word: 'KODING', clue: 'Aktivitas menulis baris perintah kode perangkat lunak' },
-    { word: 'DATA', clue: 'Kumpulan fakta atau angka terstruktur dalam sistem' },
-    { word: 'SENSOR', clue: 'Komponen pendeteksi perubahan fisik dan sinyal' },
-    { word: 'SINYAL', clue: 'Gelombang elektromagnetik pembawa informasi nirkabel' },
-    { word: 'MODEM', clue: 'Alat pengubah sinyal analog ke digital untuk internet' },
-    { word: 'MOUSE', clue: 'Alat penunjuk kursor komputer beroda gulir' },
-    { word: 'KABEL', clue: 'Penghantar listrik atau serat optik untuk arus data' },
-    { word: 'LAPTOP', clue: 'Komputer jinjing portabel berlayar lipat' },
-    { word: 'DATABASE', clue: 'Basis data terpusat penyimpanan rekaman sistem' },
-    { word: 'PROGRAM', clue: 'Rangkaian instruksi terstruktur untuk dieksekusi mesin' },
-    { word: 'SISTEM', clue: 'Kumpulan elemen saling terintegrasi mencapai satu tujuan' },
-    { word: 'APLIKASI', clue: 'Perangkat lunak terapan yang dijalankan pengguna' },
-    { word: 'CHIP', clue: 'Sirkuit terpadu mini silikon pengendali perangkat' },
-    { word: 'PIXEL', clue: 'Titik terkecil pembentuk citra gambar digital di layar' }
+    { word: 'KOMPUTER', clue: 'Perangkat elektronik ini memproses data dalam bentuk digital.' },
+    { word: 'INTERNET', clue: 'Jaringan global ini menghubungkan komputer di berbagai penjuru dunia.' },
+    { word: 'ROBOT', clue: 'Mesin otomatis ini dapat menjalankan perintah yang sudah diprogram.' },
+    { word: 'SATELIT', clue: 'Benda yang mengorbit Bumi ini dapat membantu mengirimkan sinyal dan memantau cuaca.' },
+    { word: 'SERVER', clue: 'Komputer pusat ini menyediakan layanan dan data bagi perangkat lain.' },
+    { word: 'KAMERA', clue: 'Alat optik ini digunakan untuk merekam gambar diam maupun bergerak.' },
+    { word: 'MONITOR', clue: 'Layar ini menampilkan keluaran visual dari sebuah komputer.' },
+    { word: 'KEYBOARD', clue: 'Papan tombol ini digunakan untuk mengetik huruf dan angka.' },
+    { word: 'KODING', clue: 'Kegiatan ini melibatkan penulisan instruksi untuk membuat perangkat lunak.' },
+    { word: 'DATA', clue: 'Kumpulan fakta atau angka ini disusun agar dapat diolah oleh sebuah sistem.' },
+    { word: 'SENSOR', clue: 'Komponen ini mendeteksi perubahan fisik atau sinyal di sekitarnya.' },
+    { word: 'SINYAL', clue: 'Gelombang elektromagnetik ini dapat membawa informasi tanpa kabel.' },
+    { word: 'MODEM', clue: 'Alat ini mengubah sinyal analog menjadi digital agar perangkat dapat terhubung ke jaringan.' },
+    { word: 'MOUSE', clue: 'Alat ini menggerakkan penunjuk pada layar dan biasanya dilengkapi roda gulir.' },
+    { word: 'KABEL', clue: 'Penghantar ini membawa listrik atau data melalui serat optik.' },
+    { word: 'LAPTOP', clue: 'Komputer portabel ini memiliki layar yang dapat dilipat.' },
+    { word: 'DATABASE', clue: 'Kumpulan rekaman ini disimpan secara terpusat agar mudah dikelola.' },
+    { word: 'PROGRAM', clue: 'Rangkaian instruksi terstruktur ini dibuat agar dapat dijalankan oleh mesin.' },
+    { word: 'SISTEM', clue: 'Kumpulan elemen yang saling terhubung ini bekerja untuk mencapai suatu tujuan.' },
+    { word: 'APLIKASI', clue: 'Perangkat lunak ini dirancang untuk menjalankan fungsi yang digunakan oleh pengguna.' },
+    { word: 'CHIP', clue: 'Sirkuit terpadu berukuran kecil ini dibuat dari silikon untuk mengendalikan perangkat.' },
+    { word: 'PIXEL', clue: 'Titik terkecil ini membentuk gambar digital yang terlihat pada layar.' }
   ],
   makanan: [
-    { word: 'RENDANG', clue: 'Masakan daging khas Minang bercita rasa gurih rempah pekat' },
-    { word: 'BAKSO', clue: 'Bola daging kenyal disajikan dalam mangkuk kuah kaldu hangat' },
-    { word: 'SATE', clue: 'Daging tusuk panggang arang disiram bumbu kacang gurih' },
-    { word: 'SOTO', clue: 'Sup berkuah kuning kunyit isi daging dan tauge segar' },
-    { word: 'GADO', clue: 'Salad sayuran rebus khas Betawi berlumur bumbu kacang' },
-    { word: 'NASI', clue: 'Beras yang telah dimasak menjadi makanan pokok utama' },
-    { word: 'GORENGAN', clue: 'Camilan renyah digoreng minyak gurih seperti tempe mendoan' },
-    { word: 'PEMPEK', clue: 'Olahan ikan khas Palembang berpadu kuah cuko asam pedas' },
-    { word: 'RAWON', clue: 'Sup daging sapi khas Jawa Timur berkuah hitam pekat kluwek' },
-    { word: 'LONTONG', clue: 'Beras padat dibungkus daun pisang direbus empuk' },
-    { word: 'MARTABAK', clue: 'Kue tebal manis bersarang atau telur gurih berlipat renyah' },
-    { word: 'KERUPUK', clue: 'Makanan renyah terbuat dari tapioka teman setia makan nasi' },
-    { word: 'TEMPE', clue: 'Kedelai fermentasi kaya protein khas Nusantara' },
-    { word: 'TAHU', clue: 'Endapan kedelai putih bertekstur lembut' },
-    { word: 'SAMBAL', clue: 'Ulekan cabai pedas pembakar selera makan' },
-    { word: 'GUDEG', clue: 'Nangka muda manis gurih khas Yogyakarta dengan krecek' },
-    { word: 'RUJAK', clue: 'Irisan buah segar berpadu sambal gula merah pedas' },
-    { word: 'KLEPON', clue: 'Kue bulat kenyal berlumur kelapa berisi gula merah cair' },
-    { word: 'SIOMAY', clue: 'Olahan ikan kukus khas Bandung berteman saus kacang' },
-    { word: 'BATAGOR', clue: 'Bakso tahu goreng renyah disiram kuah kacang gurih' },
-    { word: 'SERABI', clue: 'Pancake tradisional tepung beras disiram kuah kinca manis' },
-    { word: 'KOLAK', clue: 'Hidangan manis pisang dan ubi berkuah santan gula kelapa' }
+    { word: 'RENDANG', clue: 'Masakan khas Minangkabau ini dimasak lama dengan santan dan rempah.' },
+    { word: 'BAKSO', clue: 'Bola daging ini disajikan dalam kuah kaldu yang hangat.' },
+    { word: 'SATE', clue: 'Potongan daging ini ditusuk, dibakar, lalu disajikan dengan bumbu kacang.' },
+    { word: 'SOTO', clue: 'Hidangan berkuah ini biasanya berisi daging, tauge, dan rempah.' },
+    { word: 'GADO', clue: 'Salad sayuran khas Betawi ini disajikan dengan saus kacang.' },
+    { word: 'NASI', clue: 'Beras yang dimasak hingga lunak ini menjadi makanan pokok banyak orang.' },
+    { word: 'GORENGAN', clue: 'Camilan ini dimasak dalam minyak panas hingga renyah dan keemasan.' },
+    { word: 'PEMPEK', clue: 'Makanan khas Palembang ini dibuat dari ikan dan tepung sagu.' },
+    { word: 'RAWON', clue: 'Sup daging sapi khas Jawa Timur ini berwarna hitam karena kluwek.' },
+    { word: 'LONTONG', clue: 'Beras yang dibungkus daun pisang ini direbus hingga padat dan empuk.' },
+    { word: 'MARTABAK', clue: 'Hidangan ini tersedia dalam varian manis dan varian asin yang berisi telur.' },
+    { word: 'KERUPUK', clue: 'Adonan berbahan tepung ini digoreng hingga mengembang dan renyah.' },
+    { word: 'TEMPE', clue: 'Kedelai ini difermentasi dengan kapang hingga menyatu menjadi satu keping.' },
+    { word: 'TAHU', clue: 'Olahan kedelai ini dibuat dengan menggumpalkan sari kedelai.' },
+    { word: 'SAMBAL', clue: 'Bumbu ini dibuat dari cabai yang diulek bersama bahan lain.' },
+    { word: 'GUDEG', clue: 'Masakan khas Yogyakarta ini dibuat dari nangka muda dan santan.' },
+    { word: 'RUJAK', clue: 'Potongan buah ini disantap dengan bumbu yang bercita rasa pedas dan manis.' },
+    { word: 'KLEPON', clue: 'Kue berbentuk bulat ini berisi gula merah dan berbalut kelapa parut.' },
+    { word: 'SIOMAY', clue: 'Makanan kukus ini biasanya disajikan dengan saus kacang dan kecap.' },
+    { word: 'BATAGOR', clue: 'Tahu dan adonan ikan ini digoreng, lalu disajikan dengan saus kacang.' },
+    { word: 'SERABI', clue: 'Kue berbahan tepung beras ini dimasak di cetakan dan disajikan dengan kinca.' },
+    { word: 'KOLAK', clue: 'Pisang dan ubi dimasak dalam kuah santan yang diberi gula merah.' }
   ],
   transportasi: [
-    { word: 'PESAWAT', clue: 'Kendaraan udara bermesin jet pengangkut antar pulau' },
-    { word: 'KERETA', clue: 'Rangkaian gerbong melaju di atas rel baja' },
-    { word: 'KAPAL', clue: 'Kendaraan air pengarung samudra luas' },
-    { word: 'SEPEDA', clue: 'Kendaraan roda dua digerakkan kayuhan pedal' },
-    { word: 'MOTOR', clue: 'Kendaraan roda dua bertenaga mesin bahan bakar' },
-    { word: 'MOBIL', clue: 'Kendaraan bermotor roda empat penjelajah jalan raya' },
-    { word: 'BUS', clue: 'Kendaraan umum berdaya angkut banyak penumpang' },
-    { word: 'PERAHU', clue: 'Wahana air tradisional dengan dayung atau layar' },
-    { word: 'BECAK', clue: 'Kendaraan roda tiga kayuh tradisional perkotaan' },
-    { word: 'DELMAN', clue: 'Kereta beroda dua atau empat ditarik tenaga kuda' },
-    { word: 'TRUK', clue: 'Kendaraan muatan berat pengangkut logistik darat' },
-    { word: 'HELIKOPTER', clue: 'Kendaraan udara berbaling-baling atas berputar cepat' },
-    { word: 'METRO', clue: 'Kereta rel listrik bawah tanah perkotaan modern' },
-    { word: 'SKUTER', clue: 'Sepeda motor kecil atau papan luncur bertangkal' },
-    { word: 'KANO', clue: 'Perahu ramping digerakkan dengan dayung tunggal' },
-    { word: 'FERI', clue: 'Kapal penyeberangan pengangkut penumpang dan kendaraan antar pulau' },
-    { word: 'ANGKOT', clue: 'Mobil van angkutan kota bertrayek jalur tetap' },
-    { word: 'BAJAJ', clue: 'Kendaraan roda tiga bermesin oranye khas ibukota' },
-    { word: 'DOKAR', clue: 'Kereta kuda tradisional dua roda berpenumpang samping' },
-    { word: 'RAKIT', clue: 'Susunan batang bambu apung di permukaan sungai' },
-    { word: 'SPEEDBOAT', clue: 'Perahu motor cepat pembelah perairan laut dan danau' },
-    { word: 'TRAM', clue: 'Kereta rel jalan raya yang berbagi jalan dengan pejalan kaki' }
+    { word: 'PESAWAT', clue: 'Kendaraan udara bermesin jet ini digunakan untuk mengangkut penumpang antarpulau.' },
+    { word: 'KERETA', clue: 'Rangkaian gerbong ini melaju di atas rel baja.' },
+    { word: 'KAPAL', clue: 'Kendaraan air ini dapat mengarungi samudra yang luas.' },
+    { word: 'SEPEDA', clue: 'Kendaraan beroda dua ini bergerak saat pengendaranya mengayuh pedal.' },
+    { word: 'MOTOR', clue: 'Kendaraan beroda dua ini digerakkan oleh mesin berbahan bakar.' },
+    { word: 'MOBIL', clue: 'Kendaraan bermotor beroda empat ini digunakan untuk bepergian melalui jalan raya.' },
+    { word: 'BUS', clue: 'Kendaraan umum ini dirancang untuk mengangkut banyak penumpang.' },
+    { word: 'PERAHU', clue: 'Wahana air tradisional ini digerakkan dengan dayung atau layar.' },
+    { word: 'BECAK', clue: 'Kendaraan tradisional perkotaan beroda tiga ini bergerak dengan kayuhan.' },
+    { word: 'DELMAN', clue: 'Kereta tradisional beroda dua atau empat ini ditarik oleh kuda.' },
+    { word: 'TRUK', clue: 'Kendaraan darat ini digunakan untuk mengangkut muatan berat dan barang logistik.' },
+    { word: 'HELIKOPTER', clue: 'Kendaraan udara ini terbang dengan bantuan baling-baling yang berputar cepat di atasnya.' },
+    { word: 'METRO', clue: 'Kereta listrik ini melaju di jalur bawah tanah perkotaan.' },
+    { word: 'SKUTER', clue: 'Kendaraan ini dapat berupa sepeda motor kecil atau papan luncur bertangkai.' },
+    { word: 'KANO', clue: 'Perahu ramping ini digerakkan dengan satu dayung.' },
+    { word: 'FERI', clue: 'Kapal penyeberangan ini mengangkut penumpang dan kendaraan antarpulau.' },
+    { word: 'ANGKOT', clue: 'Mobil van ini melayani angkutan kota dengan rute tetap.' },
+    { word: 'BAJAJ', clue: 'Kendaraan bermesin beroda tiga ini dikenal sebagai angkutan khas ibu kota.' },
+    { word: 'DOKAR', clue: 'Kereta tradisional beroda dua ini ditarik kuda dan memiliki tempat duduk untuk penumpang.' },
+    { word: 'RAKIT', clue: 'Wahana apung ini dibuat dari batang bambu yang disusun dan dapat digunakan di sungai.' },
+    { word: 'SPEEDBOAT', clue: 'Perahu bermotor ini melaju cepat di perairan laut maupun danau.' },
+    { word: 'TRAM', clue: 'Kereta ini melaju di rel yang berada di jalan raya dan berbagi ruang dengan pengguna jalan lain.' }
   ],
   olahraga: [
-    { word: 'FUTSAL', clue: 'Permainan bola lapangan tertutup tim 5 orang' },
-    { word: 'SENAM', clue: 'Latihan olah tubuh untuk kebugaran dan kelenturan' },
-    { word: 'RENANG', clue: 'Olahraga menggerakkan tubuh meluncur di kolam air' },
-    { word: 'LARI', clue: 'Aktivitas melangkahkan kaki cepat menguji kecepatan' },
-    { word: 'TINJU', clue: 'Olahraga adu pukulan bersarung tangan di atas ring' },
-    { word: 'PANAHAN', clue: 'Olahraga membidik sasaran sasaran dengan busur panah' },
-    { word: 'BASKET', clue: 'Permainan bola tangan dengan target memasukkan ke keranjang' },
-    { word: 'VOLI', clue: 'Permainan memukul bola melewati net tinggi tanpa jatuh' },
-    { word: 'TENIS', clue: 'Olahraga bola lentur menggunakan raket di lapangan bergaris' },
-    { word: 'CATUR', clue: 'Olahraga asah otak mengatur strategi bidak di papan kotak' },
-    { word: 'SEPATU', clue: 'Perlengkapan wajib atlet untuk pelindung kaki' },
-    { word: 'GOLF', clue: 'Permainan memukul bola kecil masuk ke lubang di padang rumput' },
-    { word: 'DAYUNG', clue: 'Olahraga memacu perahu di permukaan danau atau sungai' },
-    { word: 'SILAT', clue: 'Seni bela diri warisan budaya leluhur Nusantara' },
-    { word: 'BOWLING', clue: 'Olahraga melempar bola berat menggelinding ke deretan pin' },
-    { word: 'KARATE', clue: 'Seni bela diri tangan kosong asal negeri Jepang' },
-    { word: 'JUDO', clue: 'Bela diri bantingan dan kuncian di atas matras tatami' },
-    { word: 'MARATON', clue: 'Lomba lari jarak jauh legendaris sejauh 42 kilometer' },
-    { word: 'JOGING', clue: 'Lari santai ritmis untuk menjaga kesehatan kardio jantung' },
-    { word: 'GULAT', clue: 'Olahraga kontak fisik mengunci lawan hingga menyentuh matras' },
-    { word: 'SKI', clue: 'Meluncur di atas permukaan salju dengan papan khusus' },
-    { word: 'SURFING', clue: 'Olahraga menunggangi ombak laut dengan papan selancar' }
+    { word: 'FUTSAL', clue: 'Permainan bola ini dilakukan di lapangan tertutup oleh dua tim yang masing-masing terdiri atas lima orang.' },
+    { word: 'SENAM', clue: 'Latihan olah tubuh ini membantu meningkatkan kebugaran dan kelenturan.' },
+    { word: 'RENANG', clue: 'Olahraga air ini dilakukan dengan menggerakkan tubuh di dalam kolam.' },
+    { word: 'LARI', clue: 'Aktivitas ini dilakukan dengan melangkahkan kaki secara cepat untuk menguji kecepatan.' },
+    { word: 'TINJU', clue: 'Olahraga adu pukulan ini dilakukan dengan sarung tangan di atas ring.' },
+    { word: 'PANAHAN', clue: 'Dalam olahraga ini, peserta membidik sasaran menggunakan busur dan anak panah.' },
+    { word: 'BASKET', clue: 'Dalam permainan bola ini, para pemain berusaha memasukkan bola ke keranjang.' },
+    { word: 'VOLI', clue: 'Dalam permainan ini, para pemain memukul bola melewati net tanpa membiarkannya jatuh.' },
+    { word: 'TENIS', clue: 'Olahraga lapangan ini dimainkan dengan bola lentur dan alat pemukul berjaring.' },
+    { word: 'CATUR', clue: 'Permainan asah otak ini mengandalkan strategi untuk menggerakkan bidak di papan kotak.' },
+    { word: 'SEPATU', clue: 'Alas kaki ini melindungi kaki atlet saat berlatih atau bertanding.' },
+    { word: 'GOLF', clue: 'Dalam permainan ini, peserta memukul bola kecil agar masuk ke lubang di padang rumput.' },
+    { word: 'DAYUNG', clue: 'Olahraga ini mengharuskan peserta menggerakkan perahu di danau atau sungai.' },
+    { word: 'SILAT', clue: 'Seni bela diri ini diwariskan sebagai bagian dari budaya leluhur Nusantara.' },
+    { word: 'BOWLING', clue: 'Dalam olahraga ini, peserta menggelindingkan bola berat ke arah deretan pin.' },
+    { word: 'KARATE', clue: 'Seni bela diri tangan kosong ini berasal dari Jepang.' },
+    { word: 'JUDO', clue: 'Bela diri ini menggunakan teknik bantingan dan kuncian di atas matras.' },
+    { word: 'MARATON', clue: 'Lomba lari jarak jauh ini menempuh jarak sekitar 42 kilometer.' },
+    { word: 'JOGING', clue: 'Lari santai dengan irama teratur ini dapat membantu menjaga kesehatan jantung.' },
+    { word: 'GULAT', clue: 'Olahraga kontak fisik ini melibatkan upaya mengunci lawan hingga menyentuh matras.' },
+    { word: 'SKI', clue: 'Dalam olahraga ini, peserta meluncur di atas salju menggunakan papan khusus.' },
+    { word: 'SURFING', clue: 'Olahraga ini dilakukan dengan menunggangi ombak laut menggunakan papan selancar.' }
   ],
   umum: [
-    { word: 'IBUKOTA', clue: 'Pusat administrasi pemerintahan suatu negara' },
-    { word: 'KOMPAS', clue: 'Alat navigasi penunjuk empat arah mata angin' },
-    { word: 'SAMUDRA', clue: 'Lautan luas membentang yang mengelilingi benua' },
-    { word: 'BENDERA', clue: 'Secarik kain berkibar lambang kedaulatan negara' },
-    { word: 'RUPIAH', clue: 'Mata uang resmi Negara Kesatuan Republik Indonesia' },
-    { word: 'MONAS', clue: 'Monumen tugu dengan lidah api emas di Jakarta' },
-    { word: 'GARUDA', clue: 'Lambang negara Indonesia yang mencengkeram pita semboyan' },
-    { word: 'MUSEUM', clue: 'Gedung penyimpanan dan pameran benda bersejarah' },
-    { word: 'PASPOR', clue: 'Dokumen resmi identitas warga untuk lintas negara' },
-    { word: 'KARTINI', clue: 'Pahlawan emansipasi perempuan pejuang pendidikan' },
-    { word: 'PANCASILA', clue: 'Dasar falsafah dan ideologi bangsa Indonesia' },
-    { word: 'BOROBUDUR', clue: 'Candi Buddha megah peninggalan Dinasti Syailendra' },
-    { word: 'BALI', clue: 'Pulau dewata tujuan wisata dunia tersohor di Indonesia' },
-    { word: 'SABANG', clue: 'Kota kepulauan paling barat di ujung nusantara' },
-    { word: 'MERAUKE', clue: 'Kota paling timur wilayah perbatasan Papua Indonesia' },
-    { word: 'BAHASA', clue: 'Sistem komunikasi bunyi dan lambang antar manusia' }
+    { word: 'IBUKOTA', clue: 'Kota ini menjadi pusat administrasi pemerintahan suatu negara.' },
+    { word: 'KOMPAS', clue: 'Alat navigasi ini membantu menunjukkan arah mata angin.' },
+    { word: 'SAMUDRA', clue: 'Lautan yang sangat luas ini membentang dan mengelilingi benua.' },
+    { word: 'BENDERA', clue: 'Kain yang dikibarkan ini menjadi lambang kedaulatan suatu negara.' },
+    { word: 'RUPIAH', clue: 'Mata uang ini digunakan secara resmi di Negara Kesatuan Republik Indonesia.' },
+    { word: 'MONAS', clue: 'Monumen di Jakarta ini memiliki puncak berbentuk lidah api berwarna emas.' },
+    { word: 'GARUDA', clue: 'Lambang negara Indonesia ini digambarkan mencengkeram pita yang memuat semboyan.' },
+    { word: 'MUSEUM', clue: 'Gedung ini menyimpan dan memamerkan berbagai benda bersejarah.' },
+    { word: 'PASPOR', clue: 'Dokumen identitas resmi ini diperlukan warga saat bepergian ke negara lain.' },
+    { word: 'KARTINI', clue: 'Tokoh pahlawan ini dikenal karena perjuangannya untuk pendidikan dan emansipasi perempuan.' },
+    { word: 'PANCASILA', clue: 'Dasar falsafah dan ideologi ini menjadi pedoman bagi bangsa Indonesia.' },
+    { word: 'BOROBUDUR', clue: 'Candi Buddha megah ini dibangun pada masa Dinasti Syailendra.' },
+    { word: 'BALI', clue: 'Pulau di Indonesia ini terkenal sebagai tujuan wisata dan kerap dijuluki Pulau Dewata.' },
+    { word: 'SABANG', clue: 'Kota kepulauan ini terletak di ujung paling barat wilayah Indonesia.' },
+    { word: 'MERAUKE', clue: 'Kota ini berada di wilayah Papua dan dikenal sebagai salah satu titik paling timur Indonesia.' },
+    { word: 'BAHASA', clue: 'Sistem komunikasi ini menggunakan bunyi atau lambang untuk menyampaikan pesan antarmanusia.' }
   ],
   ipa: [
-    { word: 'OKSIGEN', clue: 'Gas penyusun udara yang dihirup saat bernapas' },
-    { word: 'ATOM', clue: 'Partikel materi terkecil yang tak dapat dibagi lagi' },
-    { word: 'ENERGI', clue: 'Kemampuan atau daya untuk melakukan usaha fisik' },
-    { word: 'MAGMA', clue: 'Cairan batuan pijar bersuhu tinggi di perut bumi' },
-    { word: 'FOSIL', clue: 'Sisa atau jejak makhluk hidup purba yang membatu' },
-    { word: 'NEURON', clue: 'Sel saraf pengirim impuls listrik dalam otak' },
-    { word: 'PLANET', clue: 'Benda langit pengorbit bintang induknya' },
-    { word: 'MAMALIA', clue: 'Hewan berdarah panas yang menyusui anaknya' },
-    { word: 'BAKTERI', clue: 'Mikroorganisme sel tunggal mikroskopis' },
-    { word: 'HABITAT', clue: 'Lingkungan alami tempat tinggal suatu makhluk' },
-    { word: 'RADIASI', clue: 'Pancaran energi melalui gelombang elektromagnetik' },
-    { word: 'PUPIL', clue: 'Celah bundar di tengah bola mata pengatur cahaya' },
-    { word: 'LAMBUNG', clue: 'Organ pencernaan pengolah makanan dengan asam kuat' },
-    { word: 'JANTUNG', clue: 'Organ pemompa darah berotot ke seluruh tubuh' },
-    { word: 'GENETIKA', clue: 'Cabang ilmu biologi pewarisan sifat keturunan' },
-    { word: 'ANATOMI', clue: 'Studi ilmiah mengenai struktur tubuh makhluk hidup' }
+    { word: 'OKSIGEN', clue: 'Gas yang terdapat di udara ini dihirup manusia saat bernapas.' },
+    { word: 'ATOM', clue: 'Partikel yang sangat kecil ini merupakan salah satu penyusun materi.' },
+    { word: 'ENERGI', clue: 'Kemampuan atau daya ini diperlukan untuk melakukan suatu usaha.' },
+    { word: 'MAGMA', clue: 'Cairan batuan pijar bersuhu tinggi ini berada di dalam Bumi.' },
+    { word: 'FOSIL', clue: 'Sisa atau jejak makhluk hidup purba ini terawetkan dalam batuan.' },
+    { word: 'NEURON', clue: 'Sel saraf ini mengirimkan impuls listrik di dalam sistem saraf.' },
+    { word: 'PLANET', clue: 'Benda langit ini mengorbit sebuah bintang.' },
+    { word: 'MAMALIA', clue: 'Hewan berdarah panas dalam kelompok ini menyusui anaknya.' },
+    { word: 'BAKTERI', clue: 'Mikroorganisme bersel satu ini hanya dapat dilihat dengan bantuan mikroskop.' },
+    { word: 'HABITAT', clue: 'Lingkungan alami ini menjadi tempat tinggal bagi suatu makhluk hidup.' },
+    { word: 'RADIASI', clue: 'Pancaran energi ini merambat melalui gelombang elektromagnetik.' },
+    { word: 'PUPIL', clue: 'Celah bundar di tengah bola mata ini mengatur banyaknya cahaya yang masuk.' },
+    { word: 'LAMBUNG', clue: 'Organ pencernaan ini mengolah makanan dengan bantuan asam.' },
+    { word: 'JANTUNG', clue: 'Organ berotot ini memompa darah agar mengalir ke seluruh tubuh.' },
+    { word: 'GENETIKA', clue: 'Cabang ilmu biologi ini mempelajari pewarisan sifat keturunan.' },
+    { word: 'ANATOMI', clue: 'Bidang studi ilmiah ini membahas struktur tubuh makhluk hidup.' }
   ],
   ips: [
-    { word: 'SEJARAH', clue: 'Peristiwa masa lampau yang tersusun secara kronologis' },
-    { word: 'ARTEFAK', clue: 'Benda peninggalan arkeologis buatan manusia purba' },
-    { word: 'PRASASTI', clue: 'Piagam kuno terpahat pada permukaan batu atau logam' },
-    { word: 'KERAJAAN', clue: 'Bentuk pemerintahan berpuncak pada raja atau sultan' },
-    { word: 'MATARAM', clue: 'Kerajaan agraris kuno di Jawa pembangun candi megah' },
-    { word: 'KOLONI', clue: 'Negeri jajahan yang dikuasai oleh kekuasaan asing' },
-    { word: 'BARTER', clue: 'Sistem perdagangan tukar menukar barang tanpa uang' },
-    { word: 'EKONOMI', clue: 'Ilmu pengelolaan sumber daya, produksi, dan konsumsi' },
-    { word: 'KULTUR', clue: 'Adat istiadat, nilai budi daya, dan kebudayaan hidup' },
-    { word: 'ETNIS', clue: 'Kelompok masyarakat dengan kesamaan garis keturunan' },
-    { word: 'PASAR', clue: 'Pusat interaksi bertemunya penjual dan pembeli komoditas' },
-    { word: 'SOSIAL', clue: 'Segala hal terkait pergaulan dan tatanan masyarakat' },
-    { word: 'INFLASI', clue: 'Kecenderungan kenaikan harga barang umum terus menerus' },
-    { word: 'SUKU', clue: 'Golongan masyarakat bagian dari satu kesatuan bangsa' },
-    { word: 'TRADISI', clue: 'Kebiasaan adat turun-temurun dari nenek moyang' },
-    { word: 'ARSIP', clue: 'Koleksi dokumen rekaman sejarah yang disimpan teratur' }
+    { word: 'SEJARAH', clue: 'Peristiwa masa lampau ini dikaji dan disusun menurut urutan waktu.' },
+    { word: 'ARTEFAK', clue: 'Benda peninggalan arkeologis ini dibuat oleh manusia pada masa lampau.' },
+    { word: 'PRASASTI', clue: 'Piagam kuno ini dipahat pada permukaan batu atau logam.' },
+    { word: 'KERAJAAN', clue: 'Bentuk pemerintahan ini dipimpin oleh seorang raja atau sultan.' },
+    { word: 'MATARAM', clue: 'Kerajaan agraris kuno di Jawa ini dikenal sebagai pembangun candi megah.' },
+    { word: 'KOLONI', clue: 'Wilayah jajahan ini berada di bawah kekuasaan bangsa asing.' },
+    { word: 'BARTER', clue: 'Sistem perdagangan ini dilakukan dengan menukar barang tanpa menggunakan uang.' },
+    { word: 'EKONOMI', clue: 'Ilmu ini membahas pengelolaan sumber daya, produksi, dan konsumsi.' },
+    { word: 'KULTUR', clue: 'Istilah ini merujuk pada adat istiadat, nilai, dan kebiasaan suatu masyarakat.' },
+    { word: 'ETNIS', clue: 'Kelompok masyarakat ini memiliki kesamaan asal-usul atau garis keturunan.' },
+    { word: 'PASAR', clue: 'Tempat ini menjadi lokasi bertemunya penjual dan pembeli untuk bertransaksi.' },
+    { word: 'SOSIAL', clue: 'Istilah ini berkaitan dengan pergaulan dan tatanan dalam masyarakat.' },
+    { word: 'INFLASI', clue: 'Kondisi ini ditandai dengan kenaikan harga barang secara umum dan terus-menerus.' },
+    { word: 'SUKU', clue: 'Golongan masyarakat ini merupakan bagian dari suatu kesatuan bangsa.' },
+    { word: 'TRADISI', clue: 'Kebiasaan adat ini diwariskan secara turun-temurun dari nenek moyang.' },
+    { word: 'ARSIP', clue: 'Kumpulan dokumen dan rekaman sejarah ini disimpan dengan teratur.' }
   ],
   campuran: [
-    { word: 'OKSIGEN', clue: 'Gas esensial yang dihirup manusia saat bernapas (Sains)' },
-    { word: 'RENDANG', clue: 'Masakan daging Minangkabau kaya rempah gurih (Kuliner)' },
-    { word: 'INTERNET', clue: 'Jaringan raksasa penghubung komputer di dunia (Teknologi)' },
-    { word: 'KOMPAS', clue: 'Alat navigasi penunjuk arah utara magnetik (Umum)' },
-    { word: 'JANTUNG', clue: 'Organ vital pemompa aliran darah tubuh (Biologi)' },
-    { word: 'SEJARAH', clue: 'Catatan peristiwa masa lampau umat manusia (IPS)' },
-    { word: 'HARIMAU', clue: 'Kucing besar pemangsa loreng penghuni hutan (Fauna)' },
-    { word: 'MANGGA', clue: 'Buah tropis manis berbiji pelok pipih (Flora)' },
-    { word: 'RUPIAH', clue: 'Mata uang sah Negara Republik Indonesia (Ekonomi)' },
-    { word: 'ATOM', clue: 'Partikel dasar penyusun materi di alam semesta (Fisika)' },
-    { word: 'ROBOT', clue: 'Mesin pintar yang dapat beroperasi otomatis (Teknologi)' },
-    { word: 'KERETA', clue: 'Moda angkutan darat yang meluncur di atas rel (Transportasi)' },
-    { word: 'MONAS', clue: 'Tugu lambang perjuangan rakyat dengan api emas (Sejarah)' },
-    { word: 'CATUR', clue: 'Permainan strategi asah otak di atas 64 petak (Olahraga)' },
-    { word: 'BAKTERI', clue: 'Organisme mikroskopis bersel tunggal (Biologi)' },
-    { word: 'PASAR', clue: 'Tempat transaksi perniagaan barang dan jasa (Ekonomi)' },
-    { word: 'KELINCI', clue: 'Hewan mamalia berbulu halus bertelinga panjang (Fauna)' },
-    { word: 'PRASASTI', clue: 'Tulisan kuno terpahat di batu peninggalan raja (Arkeologi)' },
-    { word: 'LAPTOP', clue: 'Komputer jinjing dengan baterai dan layar lipat (Teknologi)' },
-    { word: 'PISANG', clue: 'Buah berkulit kuning kaya kandungan kalium (Flora)' },
-    { word: 'ENERGI', clue: 'Daya untuk melakukan kerja atau menghasilkan panas (Fisika)' },
-    { word: 'MUSEUM', clue: 'Balai penyimpanan benda bersejarah bernilai tinggi (Budaya)' },
-    { word: 'FUTSAL', clue: 'Sepak bola lapangan lantai tim lima orang (Olahraga)' },
-    { word: 'PESAWAT', clue: 'Kendaraan bersayap penjelajah langit antarkota (Transportasi)' }
+    { word: 'OKSIGEN', clue: 'Gas ini dihirup manusia saat bernapas dan dipelajari dalam ilmu sains.' },
+    { word: 'RENDANG', clue: 'Masakan daging khas Minangkabau ini kaya akan rempah dan cita rasa gurih.' },
+    { word: 'INTERNET', clue: 'Jaringan komputer yang luas ini menghubungkan perangkat di seluruh dunia.' },
+    { word: 'KOMPAS', clue: 'Alat navigasi ini membantu menentukan arah, termasuk arah utara magnetis.' },
+    { word: 'JANTUNG', clue: 'Organ vital ini memompa darah agar mengalir ke seluruh tubuh.' },
+    { word: 'SEJARAH', clue: 'Catatan mengenai peristiwa masa lampau umat manusia ini dipelajari dalam ilmu sosial.' },
+    { word: 'HARIMAU', clue: 'Kucing besar pemangsa ini memiliki belang dan hidup di alam liar.' },
+    { word: 'MANGGA', clue: 'Buah tropis ini terasa manis dan memiliki biji pipih.' },
+    { word: 'RUPIAH', clue: 'Mata uang resmi ini digunakan di Negara Republik Indonesia.' },
+    { word: 'ATOM', clue: 'Partikel sangat kecil ini merupakan salah satu penyusun materi.' },
+    { word: 'ROBOT', clue: 'Mesin otomatis ini dapat bekerja sesuai instruksi yang diberikan.' },
+    { word: 'KERETA', clue: 'Moda angkutan darat ini melaju di atas rel.' },
+    { word: 'MONAS', clue: 'Tugu di Jakarta ini menjadi lambang perjuangan dan memiliki puncak berbentuk api emas.' },
+    { word: 'CATUR', clue: 'Permainan strategi ini mengasah pikiran dan dimainkan di papan berisi 64 petak.' },
+    { word: 'BAKTERI', clue: 'Organisme mikroskopis bersel tunggal ini hanya dapat dilihat dengan bantuan alat khusus.' },
+    { word: 'PASAR', clue: 'Tempat ini menjadi lokasi transaksi jual beli barang dan jasa.' },
+    { word: 'KELINCI', clue: 'Mamalia berbulu halus ini memiliki telinga panjang.' },
+    { word: 'PRASASTI', clue: 'Tulisan kuno ini dipahat pada batu dan menjadi peninggalan masa kerajaan.' },
+    { word: 'LAPTOP', clue: 'Komputer portabel ini memiliki baterai dan layar yang dapat dilipat.' },
+    { word: 'PISANG', clue: 'Buah berkulit kuning ini kaya akan kalium.' },
+    { word: 'ENERGI', clue: 'Daya ini diperlukan untuk melakukan kerja atau menghasilkan panas.' },
+    { word: 'MUSEUM', clue: 'Gedung ini menyimpan dan memamerkan benda bersejarah yang bernilai.' },
+    { word: 'FUTSAL', clue: 'Permainan bola di lapangan tertutup ini melibatkan dua tim yang masing-masing terdiri atas lima orang.' },
+    { word: 'PESAWAT', clue: 'Kendaraan bersayap ini digunakan untuk bepergian melalui udara antarkota.' }
   ]
 };
 
@@ -343,6 +343,24 @@ function extractJsonFromText(rawText) {
 }
 
 // Validasi dan normalisasi daftar kata
+function isNaturalIndonesianClue(clue, word) {
+  const tokens = clue.match(/[A-Za-zÀ-ÿ]+/g) || [];
+  const answerPattern = new RegExp(
+    `(^|[^A-Za-z])${word}(?:nya|an|kan|i)?([^A-Za-z]|$)`,
+    'i'
+  );
+  const hasPredicate = /\b(?:adalah|merupakan|dapat|bisa|digunakan|berfungsi|berasal|terletak|hidup|memiliki|mempunyai|dikenal|terkenal|termasuk|berbentuk|terbuat|terdiri|menjadi|membantu|menghasilkan|menyebabkan|menyimpan|menyampaikan|menghubungkan|membawa|menandai|mengukur|mengatur|menjaga|terbentuk|tumbuh|bergerak|mengalir|berlangsung|bernapas|dipakai|ditemukan|disebut|membuat|melindungi|berperan|ditulis|dibuat|diolah|dimakan|memakan|makan|dibudidayakan|menyusun|mengandung|terdapat|memengaruhi|mempengaruhi|menentukan|memberi|menunjukkan|memproduksi|meningkat|menurun|menyebar|terjadi|mengalami|memerlukan|dihasilkan|ditandai|menempati|berkembang|menyukai|menyajikan|menyusui|menunjuk|mengangkut|menggunakan|menggerakkan|mengelilingi|menyediakan|mencakup|memancarkan|menyerap|terbuka|tertutup|berwarna|berukuran|berisi|berbahan|berciri|berada|memasuki|memasak|direbus|dipanggang|ditusuk|dimasak|ditempuh|berjalan|berlari|berenang|bertelur|menetas|mengubah|terbagi|bersifat|mencapai|menempuh|menciptakan|membeli|menjual|bertukar|mendukung|menyebut|tercatat|berkaitan|menyelesaikan|bertekstur|kaya|terasa|manis|hangat|lembut|keras|kecil|besar|luas|panjang|pendek|kuat|tipis|tebal|tajam|renyah|empuk|asam|gurih|pedas|padat|segar|hitam|putih|merah|hijau|oranye|kuning|berat|ringan|ramping|cepat|lambat)\b/i.test(clue);
+
+  return clue.length >= 24 &&
+    clue.length <= 110 &&
+    tokens.length >= 5 &&
+    tokens.length <= 20 &&
+    /[.!?]$/.test(clue) &&
+    hasPredicate &&
+    !answerPattern.test(clue) &&
+    !/[()[\]{}:;]/.test(clue);
+}
+
 function validateAndFilterWords(words, minLen, maxLen, targetCount) {
   if (!Array.isArray(words)) return [];
 
@@ -352,14 +370,18 @@ function validateAndFilterWords(words, minLen, maxLen, targetCount) {
   for (const item of words) {
     if (!item || typeof item.word !== 'string' || typeof item.clue !== 'string') continue;
     const cleanWord = item.word.toUpperCase().replace(/[^A-Z]/g, '');
-    const cleanClue = item.clue.trim();
+    const cleanClue = item.clue.replace(/\s+/g, ' ').trim();
 
-    if (cleanWord.length >= minLen && cleanWord.length <= maxLen && cleanClue.length > 0) {
+    if (
+      cleanWord.length >= minLen &&
+      cleanWord.length <= maxLen &&
+      isNaturalIndonesianClue(cleanClue, cleanWord)
+    ) {
       if (!seen.has(cleanWord)) {
         seen.add(cleanWord);
         validWords.push({
           word: cleanWord,
-          clue: cleanClue.slice(0, 75) // Batasi clue agar pas di UI
+          clue: cleanClue
         });
       }
     }
@@ -584,7 +606,7 @@ export default async function handler(req, res) {
 PENTING: Setiap kata HARUS berasal dari bidang yang BERBEDA-BEDA (kombinasi Sains, Geografi Nusantara, Sejarah, Fauna/Flora, Teknologi, Kuliner Tradisional, Olahraga). Hindari fokus pada satu topik saja.`
     : `Tema: ${theme.toUpperCase()} (Fokus inspirasi topik: ${randomAngle})`;
 
-  const promptText = `Kamu adalah pakar penyusun teka-teki silang Bahasa Indonesia cerdas untuk game "SilangKata".
+  const promptText = `Kamu adalah penyunting soal TTS berbahasa Indonesia untuk game "SilangKata". Utamakan kejelasan, ketepatan fakta, dan kalimat yang terdengar wajar bagi penutur asli.
 
 ${themeInstruction}
 Tingkat kesulitan: ${diffConfig.label} (${difficulty})
@@ -598,22 +620,27 @@ HINDARI PENGULANGAN DARI PERMAINAN PEMAIN INI:
 - Jangan ulangi petunjuk berikut (meski dengan sedikit perubahan kata): ${[...avoidClues].slice(0, 40).join(' | ') || '(belum ada riwayat)'}
 - Pilih subtopik, kosakata, dan gaya petunjuk yang berbeda dari daftar tersebut. Jika daftar panjang, utamakan kata baru.
 
-ATURAN KOSAKATA & CLUE (WAJIB DIPATUHI SECARA KETAT):
-1. HINDARI KATA GENERIK / KLISE MEMBOSANKAN:
-   - DILARANG menggunakan kata-kata super umum tingkat anak TK/SD yang membosankan (contoh terlarang: KUCING, ANJING, AYAM, BEBEK, IKAN, APEL, JERUK, PISANG, BUKU, MEJA, MOBIL, LAPTOP, MONAS, MANGGA).
-   - Gunakan perbendaharaan kata Bahasa Indonesia (KBBI) yang kaya, bervariasi, berbobot, edukatif, dan menarik bagi pemain remaja/dewasa.
-   - WAJIB 100% BAHASA INDONESIA BAKU. DILARANG menggunakan kata bahasa Inggris (contoh terlarang: RABBIT, SCREEN, MOUSE, COMPUTER, DRIVER, SMARTPHONE).
+ATURAN MUTU BAHASA DAN SOAL (WAJIB):
+1. Gunakan Bahasa Indonesia baku yang sederhana dan alami. Susun kalimat seperti yang biasa ditulis penyunting soal Indonesia; jangan menerjemahkan pola kalimat bahasa Inggris secara harfiah.
+2. Setiap clue harus berupa satu kalimat utuh yang lancar, terdiri dari 5–20 kata dan 24–110 karakter, serta diakhiri tanda titik. Gunakan subjek dan predikat yang jelas. Jangan kirim frasa definisi yang terpotong.
+3. Buat clue spesifik sehingga satu jawaban paling masuk akal. Sertakan ciri pembeda, fungsi, konteks, atau fakta yang tepat; hindari petunjuk umum yang bisa cocok dengan banyak jawaban.
+4. Kesulitan berasal dari pengetahuan yang diuji, bukan dari susunan kalimat yang rumit. Jangan memakai teka-teki samar, kiasan yang membingungkan, istilah langka tanpa konteks, atau fakta yang meragukan.
+5. Pakai kosakata Indonesia yang lazim dan ejaan baku. Hindari istilah Inggris jika ada padanan Indonesia yang umum. Nama serapan yang sudah lazim boleh digunakan.
+6. Jangan menyebut jawaban, bentuk berimbuhannya, label kategori, tanda kurung, atau keterangan tambahan di dalam clue.
+7. Jawaban harus kata Indonesia atau nama diri yang dikenal, ditulis dengan huruf Latin tanpa spasi/tanda baca, panjang 4–8 huruf. Jangan mengarang kata atau memakai ejaan yang dipaksakan agar cocok.
 
-2. PETUNJUK (CLUE) CERDAS & ASOSIATIF:
-   - Buat petunjuk (clue) yang MENARIK & CERDAS, berupa fakta unik, fungsi spesifik, asal daerah, istilah ilmiah/budaya, atau teka-teki asosiasi.
-   - JANGAN membuat definisi kamus kaku yang monoton (hindari pola: "Hewan berkaki empat...", "Buah berwarna kuning...", "Alat elektronik penampil gambar...").
-   - Clue ringkas dan padat (maksimal 75 karakter) tanpa menyebutkan kata jawabannya.
+CONTOH GAYA YANG DIHARAPKAN:
+- { "word": "BADAK", "clue": "Mamalia ini memiliki cula dan hidup di Asia atau Afrika." }
+- { "word": "PEMPEK", "clue": "Makanan khas Palembang ini dibuat dari ikan dan tepung sagu." }
+- { "word": "NEURON", "clue": "Sel ini menyampaikan pesan dari otak ke seluruh tubuh." }
+- { "word": "PRASASTI", "clue": "Tulisan pada batu ini menjadi bukti kehidupan masa lampau." }
+Hindari gaya seperti "Mamalia cula keras Afrika", "Olahan ikan khas Palembang dengan cuko", atau "Alat penunjuk arah utara magnetik". Kalimat harus jelas tanpa perlu menebak maksudnya.
 
 Format output STRICT JSON (tanpa markdown, tanpa teks pengantar):
 {
   "theme": "${isMixedTheme ? 'campuran' : theme}",
   "words": [
-    { "word": "KATA1", "clue": "petunjuk cerdas di sini" }
+    { "word": "JAWABAN", "clue": "Satu kalimat petunjuk yang jelas dan alami." }
   ]
 }`;
 
