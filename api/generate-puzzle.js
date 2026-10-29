@@ -32,6 +32,66 @@ const DIFFICULTY_MAP = {
   }
 };
 
+// Sub-topik acak untuk memperkaya ragam kosakata dan mencegah AI berputar di kata klise yang itu-itu saja
+const SUBTOPIC_ANGLES = {
+  hewan: [
+    'Fauna endemik Nusantara, satwa langka, dan hewan hutan tropis',
+    'Biota laut, pesisir terumbu karang, moluska, dan ikan laut dalam',
+    'Burung eksotis, unggas pemangsa, dan satwa nokturnal malam',
+    'Reptil unik, amfibi perairan, serangga bermanfaat, dan hewan padang savana'
+  ],
+  buah: [
+    'Buah tropis lokal Nusantara, buah hutan langka, dan buah eksotis',
+    'Buah sitrus beraroma segar, berry, dan tanaman budidaya perkebunan',
+    'Tanaman obat herbal berbuah, buah berbiji unik, dan rempah segar'
+  ],
+  teknologi: [
+    'Jaringan komputer, protokol internet modern, keamanan siber, dan enkripsi',
+    'Perangkat keras, semikonduktor silikon, arsitektur pemrosesan, dan periferal',
+    'Kecerdasan buatan, algoritma data, basis data, dan rekayasa perangkat lunak',
+    'Robotika, telekomunikasi satelit, sensor cerdas, dan transmisi nirkabel'
+  ],
+  makanan: [
+    'Kuliner tradisional khas daerah di Nusantara dari Sabang sampai Merauke',
+    'Jajanan pasar, kue tradisional, kudapan gurih, dan olahan tepung ketan',
+    'Hidangan rempah berkuah gurih, olahan daging panggang, dan makanan fermentasi',
+    'Bumbu dapur alami, hidangan laut khas pesisir, dan sambal Nusantara'
+  ],
+  transportasi: [
+    'Perkeretaapian, trem perkotaan, lokomotif, dan moda transportasi rel modern',
+    'Dunia maritim: kapal samudra, perahu layar tradisional, dan armada penyeberangan',
+    'Kedirgantaraan: pesawat terbang, balon udara, helikopter, dan armada udara',
+    'Transportasi darat perkotaan, angkutan umum legendaris, dan kendaraan roda'
+  ],
+  olahraga: [
+    'Atletik lintasan lari, lompat jauh, ketangkasan senam, dan renang',
+    'Olahraga raket, bola kecil, panahan sasaran, dan ketangkasan individu',
+    'Olahraga bela diri tradisional Nusantara & dunia, gulat, dan tinju',
+    'Olahraga strategi papan pikir, olahraga tim beregu, dan ketahanan fisik'
+  ],
+  umum: [
+    'Geografi dunia, kepulauan Nusantara, gunung, dan bentang alam benua',
+    'Tokoh sejarah besar, peradaban kuno, candi, dan warisan kebudayaan',
+    'Astronomi, rasi bintang, fenomena alam, dan kalender waktu',
+    'Sistem peradilan, lembaga negara, diplomasi dunia, dan wawasan global'
+  ],
+  ipa: [
+    'Biologi makhluk hidup, anatomi organ tubuh, jaringan sel, dan genetika',
+    'Fisika partikel, hukum gerak gravitasi, medan magnet, gelombang cahaya, dan energi',
+    'Kimiawi unsur periodik, reaksi molekul, asam-basa, dan gas atmosfer bumi',
+    'Ekosistem biosfer, rantai makanan, iklim, dan geologi lapisan bumi'
+  ],
+  ips: [
+    'Sejarah perjuangan bangsa, kerajaan maritim/agraris, dan peristiwa bersejarah',
+    'Sistem perekonomian, perbankan, perdagangan komoditas, inflasi, dan devisa',
+    'Struktur sosial masyarakat, kebudayaan suku bangsa, adat, dan norma hukum',
+    'Arkeologi prasasti, dokumen arsip kuno, monumen sejarah, dan dinamika penduduk'
+  ],
+  campuran: [
+    'Kombinasi kaya lintas bidang: Biologi/Sains, Geografi Nusantara, Sejarah & Budaya, Teknologi Modern, Kuliner Tradisional, Fauna Unik, dan Olahraga'
+  ]
+};
+
 // In-memory cache selama 10 menit (600.000 ms)
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const puzzleCache = new Map();
@@ -326,11 +386,11 @@ async function callOpenAICompatible({ url, apiKey, model, promptText, timeoutMs 
         messages: [
           {
             role: 'system',
-            content: 'Kamu adalah generator kata untuk game teka-teki silang Bahasa Indonesia SilangKata. Berikan output STRICT JSON valid tanpa format markdown.'
+            content: 'Kamu adalah master penyusun teka-teki silang Bahasa Indonesia untuk SilangKata. Berikan daftar kata variatif, edukatif, dan cerdas dalam format STRICT JSON tanpa markdown.'
           },
           { role: 'user', content: promptText }
         ],
-        temperature: 0.7,
+        temperature: 0.88,
         response_format: { type: 'json_object' }
       })
     });
@@ -438,18 +498,22 @@ export default async function handler(req, res) {
   }
   targetCount = Math.min(50, Math.max(5, targetCount));
 
+  const useCache = body.useCache === true;
   const cacheKey = `${theme}_${difficulty}_${targetCount}`;
   const now = Date.now();
 
-  // Cek cache in-memory
-  const cached = puzzleCache.get(cacheKey);
-  if (cached && now - cached.timestamp < CACHE_TTL_MS) {
-    return res.status(200).json({
-      theme: cached.data.theme,
-      difficulty: cached.data.difficulty,
-      words: cached.data.words,
-      cached: true
-    });
+  // Hanya gunakan cache jika diminta eksplisit (misal untuk sinkronisasi room pemain bersama)
+  if (useCache) {
+    const cached = puzzleCache.get(cacheKey);
+    if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+      return res.status(200).json({
+        theme: cached.data.theme,
+        difficulty: cached.data.difficulty,
+        words: cached.data.words,
+        cached: true,
+        source: cached.data.source
+      });
+    }
   }
 
   const hasAnyApiKey = Boolean(
@@ -466,31 +530,41 @@ export default async function handler(req, res) {
     return res.status(200).json(fallbackData);
   }
 
-  const themeInstruction = isMixedTheme
-    ? `Tema: CAMPURAN ANEKA BIDANG (Kombinasi acak: Pengetahuan Umum, Sains/IPA, Sejarah/IPS, Flora/Fauna, Geografi, Kuliner, Bahasa, dan Teknologi).
-PENTING: Jangan terikat pada satu topik! Setiap kata HARUS berasal dari bidang/topik yang BERBEDA-BEDA agar kuis sangat bervariasi.`
-    : `Tema: ${theme.toUpperCase()}`;
+  // Pilih sudut pandang/inspirasi acak untuk menghindari pengulangan kata klise
+  const angleList = SUBTOPIC_ANGLES[theme] || SUBTOPIC_ANGLES.campuran;
+  const randomAngle = angleList[Math.floor(Math.random() * angleList.length)];
+  const randomEntropy = Math.floor(Math.random() * 999999);
 
-  const promptText = `Kamu adalah generator kata untuk game teka-teki silang Bahasa Indonesia bernama SilangKata.
+  const themeInstruction = isMixedTheme
+    ? `Tema: CAMPURAN ANEKA BIDANG.
+PENTING: Setiap kata HARUS berasal dari bidang yang BERBEDA-BEDA (kombinasi Sains, Geografi Nusantara, Sejarah, Fauna/Flora, Teknologi, Kuliner Tradisional, Olahraga). Hindari fokus pada satu topik saja.`
+    : `Tema: ${theme.toUpperCase()} (Fokus inspirasi topik: ${randomAngle})`;
+
+  const promptText = `Kamu adalah pakar penyusun teka-teki silang Bahasa Indonesia cerdas untuk game "SilangKata".
 
 ${themeInstruction}
 Tingkat kesulitan: ${diffConfig.label} (${difficulty})
 Kriteria kesulitan: ${diffConfig.desc}
-Panjang kata: 4-8 huruf (fleksibel agar mudah berpotongan di papan TTS)
-Jumlah kata: ${targetCount}
+Panjang kata: 4 sampai 8 huruf (fleksibel agar mudah berpotongan di papan TTS)
+Jumlah kata yang diminta: ${targetCount} kata
+ID Sesi Acak: #${randomEntropy}
 
-Tugas: Hasilkan ${targetCount} kata Bahasa Indonesia yang:
-- Panjang 4 sampai 8 huruf (semua HURUF KAPITAL, tanpa spasi/tanda baca/diakritik)
-- ${isMixedTheme ? 'Berasal dari berbagai topik campuran (sains, geografi, sejarah, umum, teknologi, hewan, kuliner, dll)' : `Sesuai tema "${theme}"`}
-- Tingkat kesulitan pertanyaan/clue sesuai kriteria: "${diffConfig.desc}"
-- Bukan nama merek komersial atau kata terlarang
-- Clue harus padat, menarik, dan informatif (maksimal 75 karakter) tanpa menyebut kata jawabannya
+ATURAN KOSAKATA & CLUE (WAJIB DIPATUHI SECARA KETAT):
+1. HINDARI KATA GENERIK / KLISE MEMBOSANKAN:
+   - DILARANG menggunakan kata-kata super umum tingkat anak TK/SD yang membosankan (contoh terlarang: KUCING, ANJING, AYAM, BEBEK, IKAN, APEL, JERUK, PISANG, BUKU, MEJA, MOBIL, LAPTOP, MONAS, MANGGA).
+   - Gunakan perbendaharaan kata Bahasa Indonesia (KBBI) yang kaya, bervariasi, berbobot, edukatif, dan menarik bagi pemain remaja/dewasa.
+   - WAJIB 100% BAHASA INDONESIA BAKU. DILARANG menggunakan kata bahasa Inggris (contoh terlarang: RABBIT, SCREEN, MOUSE, COMPUTER, DRIVER, SMARTPHONE).
 
-Format output STRICT JSON (tanpa markdown, tanpa penjelasan tambahan):
+2. PETUNJUK (CLUE) CERDAS & ASOSIATIF:
+   - Buat petunjuk (clue) yang MENARIK & CERDAS, berupa fakta unik, fungsi spesifik, asal daerah, istilah ilmiah/budaya, atau teka-teki asosiasi.
+   - JANGAN membuat definisi kamus kaku yang monoton (hindari pola: "Hewan berkaki empat...", "Buah berwarna kuning...", "Alat elektronik penampil gambar...").
+   - Clue ringkas dan padat (maksimal 75 karakter) tanpa menyebutkan kata jawabannya.
+
+Format output STRICT JSON (tanpa markdown, tanpa teks pengantar):
 {
   "theme": "${isMixedTheme ? 'campuran' : theme}",
   "words": [
-    { "word": "KATA1", "clue": "petunjuk singkat di sini" }
+    { "word": "KATA1", "clue": "petunjuk cerdas di sini" }
   ]
 }`;
 
@@ -501,7 +575,7 @@ Format output STRICT JSON (tanpa markdown, tanpa penjelasan tambahan):
   if (!parsed && process.env.GROQ_API_KEY) {
     const groqCandidateModels = process.env.GROQ_MODEL
       ? [process.env.GROQ_MODEL]
-      : ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+      : ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
 
     for (const groqModel of groqCandidateModels) {
       try {
