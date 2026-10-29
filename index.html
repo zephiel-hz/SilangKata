@@ -96,6 +96,13 @@
     <!-- SCREEN 2: LOBBY CO-OP -->
     <section id="screen-lobby" class="screen">
       <div class="glass-panel text-center">
+        <!-- Player Identity Banner -->
+        <div class="player-identity-bar" id="lobby-identity-bar">
+          <span class="player-identity-avatar">👤</span>
+          <span class="player-identity-text">Bermain sebagai: <strong id="lobby-player-name-display">Pemain</strong></span>
+          <button id="btn-edit-player-name" class="btn-text-action" title="Ubah Nama">✏️ Ganti</button>
+        </div>
+
         <h2 class="form-label" style="font-size: 1.2rem; margin-bottom: 16px;">MAIN BARENG</h2>
 
         <div class="form-group" style="margin-bottom: 14px; text-align: left;">
@@ -152,6 +159,12 @@
           <!-- Dynamic player slots rendered via app.js -->
         </div>
 
+        <!-- Tombol Khusus Guest: Ready / Batal Siap -->
+        <button id="btn-ready-coop" class="btn btn-secondary btn-ready-action" style="display: none; margin-bottom: 12px; width: 100%;">
+          <span>✅</span> SAYA SIAP BERMAIN
+        </button>
+
+        <!-- Tombol Khusus Host: Mulai Permainan (Aktif saat semua ready) -->
         <button id="btn-start-coop" class="btn btn-primary" style="display: none; margin-bottom: 12px; width: 100%;">
           <span>🚀</span> MULAI PERMAINAN SEKARANG
         </button>
@@ -181,8 +194,9 @@
             </div>
           </div>
 
-          <!-- Tombol Aksi: Bantuan & Audio -->
+          <!-- Tombol Aksi: Leaderboard, Bantuan & Audio -->
           <div class="hud-controls">
+            <button id="btn-hud-leaderboard" class="btn-hud-round btn-hud-leaderboard" title="Peringkat Co-op" style="display: none;">🏆</button>
             <button id="btn-hint" class="btn-hud-round btn-hud-hint" title="Buka 1 Huruf (-50 Poin)">💡</button>
             <button id="btn-audio-toggle" class="btn-hud-round" title="Suara On/Off">🔊</button>
           </div>
@@ -269,6 +283,34 @@
           <span class="result-time-pill" id="result-time">⏱ 00:00</span>
         </div>
 
+        <!-- Rincian Akumulasi Skor & Potongan Petunjuk -->
+        <div id="result-breakdown-details" class="score-breakdown-details">
+          <div class="breakdown-row">
+            <span>🎯 Kata Terjawab (<strong id="bd-words-count">0</strong>):</span>
+            <span class="bd-val positive" id="bd-words-pts">+0 Poin</span>
+          </div>
+          <div class="breakdown-row" id="bd-bonus-row">
+            <span>🏆 Bonus Selesai:</span>
+            <span class="bd-val positive" id="bd-bonus-pts">+300 Poin</span>
+          </div>
+          <div class="breakdown-row" id="bd-hints-row">
+            <span>💡 Potongan Petunjuk (<strong id="bd-hints-count">0</strong>x):</span>
+            <span class="bd-val negative" id="bd-hints-pts">-0 Poin</span>
+          </div>
+          <div class="breakdown-row breakdown-total">
+            <span>⭐ Skor Total Akhir:</span>
+            <span class="bd-val highlight" id="bd-total-pts">0 Poin</span>
+          </div>
+        </div>
+
+        <!-- Leaderboard Co-op pada Layar Hasil -->
+        <div id="result-coop-leaderboard" class="result-leaderboard-box" style="display: none;">
+          <h3 class="leaderboard-title">🏆 KLASEMEN CO-OP</h3>
+          <div id="result-leaderboard-list" class="leaderboard-list">
+            <!-- Rendered by app.js -->
+          </div>
+        </div>
+
         <div class="menu-actions" style="margin-top: 16px;">
           <button id="btn-next-puzzle" class="btn btn-primary">
             <span>🔄</span> PUZZLE BERIKUTNYA
@@ -334,13 +376,53 @@
     </div>
   </div>
 
+  <!-- MODAL INPUT NAMA PEMAIN -->
+  <div id="modal-player-name" class="modal-overlay">
+    <div class="glass-panel" style="max-width: 360px; text-align: center; padding: 22px;">
+      <div style="font-size: 2.2rem; margin-bottom: 8px;">🎮</div>
+      <h3 id="modal-name-title" style="color: var(--cyan); font-size: 1.2rem; margin-bottom: 6px;">Siapa Namamu?</h3>
+      <p id="modal-name-desc" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+        Nama ini akan tampil di room dan papan peringkat (leaderboard) bersama temanmu.
+      </p>
+      <div class="form-group" style="margin-bottom: 16px;">
+        <input type="text" id="input-profile-name" class="input-cyber" placeholder="Ketik namamu..." maxlength="15" autocomplete="off">
+      </div>
+      <div class="modal-actions-col">
+        <button id="btn-save-profile-name" class="btn btn-primary" style="width: 100%; margin-bottom: 8px;">
+          SIMPAN & LANJUT
+        </button>
+        <button id="btn-cancel-profile-name" class="btn btn-outline" style="width: 100%; display: none;">
+          BATAL
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL LIVE LEADERBOARD IN-GAME -->
+  <div id="modal-live-leaderboard" class="modal-overlay">
+    <div class="glass-panel" style="max-width: 380px; text-align: center; padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="color: var(--cyan); font-size: 1.15rem; margin: 0; display: flex; align-items: center; gap: 8px;">
+          <span>🏆</span> Peringkat Sementara
+        </h3>
+        <button id="btn-close-live-leaderboard" class="btn-hud-round" style="width: 32px; height: 32px; font-size: 0.85rem;">✕</button>
+      </div>
+      <div id="live-leaderboard-list" class="leaderboard-list" style="margin-bottom: 14px;">
+        <!-- Dynamic live leaderboard list -->
+      </div>
+      <button id="btn-dismiss-leaderboard" class="btn btn-outline" style="width: 100%;">
+        TUTUP
+      </button>
+    </div>
+  </div>
+
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="toast">Notifikasi</div>
 
   <!-- Scripts -->
   <script src="vendor/peerjs.min.js"></script>
-  <script src="multiplayer.js?v=3.3"></script>
-  <script src="app.js?v=3.3"></script>
+  <script src="multiplayer.js?v=3.4"></script>
+  <script src="app.js?v=3.4"></script>
   <script>
     // Register Service Worker jika didukung
     if ('serviceWorker' in navigator) {

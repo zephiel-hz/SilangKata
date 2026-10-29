@@ -45,7 +45,10 @@
       this.maxPlayers = 2; // Default 2, dapat disetel hingga 6
       this.roomCode = null;
       this.isConnected = false;
-      this.connections = new Map(); // Untuk Host: peerId -> { conn, playerNum }
+      this.playerName = 'Pemain';
+      this.isReady = false;
+      this.isGameInProgress = false;
+      this.connections = new Map(); // Untuk Host: peerId -> { conn, playerNum, name, isReady }
       this.guestConn = null; // Untuk Guest: data channel ke Host
       this._lastPlayerList = [];
       this.callbacks = {
@@ -54,7 +57,8 @@
         onConnected: null,
         onMessage: null,
         onDisconnected: null,
-        onError: null
+        onError: null,
+        onMidGameJoin: null
       };
       this.pingInterval = null;
       this.connTimeout = null;
@@ -77,6 +81,31 @@
       }
     }
 
+    setPlayerName(name) {
+      if (name && typeof name === 'string') {
+        this.playerName = name.trim().slice(0, 15);
+      }
+    }
+
+    setReady(isReady) {
+      this.isReady = Boolean(isReady);
+      if (!this.isHost) {
+        this.send({
+          type: 'ready-toggle',
+          isReady: this.isReady
+        });
+      }
+    }
+
+    allGuestsReady() {
+      if (!this.isHost) return false;
+      if (this.connections.size === 0) return false;
+      for (const info of this.connections.values()) {
+        if (!info.isReady) return false;
+      }
+      return true;
+    }
+
     // Buat kode room 6 karakter
     generateRoomCode() {
       let code = '';
@@ -90,16 +119,31 @@
     // Mendapatkan daftar pemain yang saat ini terhubung
     getPlayerList() {
       if (this.isHost) {
-        const list = [{ playerNum: 1, isHost: true }];
+        const list = [{
+          playerNum: 1,
+          isHost: true,
+          name: this.playerName || 'Host',
+          isReady: true
+        }];
         for (const info of this.connections.values()) {
-          list.push({ playerNum: info.playerNum, isHost: false });
+          list.push({
+            playerNum: info.playerNum,
+            isHost: false,
+            name: info.name || `Pemain ${info.playerNum}`,
+            isReady: Boolean(info.isReady)
+          });
         }
         list.sort((a, b) => a.playerNum - b.playerNum);
         return list;
       }
       return this._lastPlayerList && this._lastPlayerList.length > 0
         ? this._lastPlayerList
-        : [{ playerNum: this.playerNum, isHost: false }];
+        : [{
+            playerNum: this.playerNum,
+            isHost: false,
+            name: this.playerName || `Pemain ${this.playerNum}`,
+            isReady: this.isReady
+          }];
     }
 
     // Broadcast pesan ke seluruh guest terhubung (khusus Host)
@@ -135,10 +179,12 @@
     }
 
     // Inisialisasi Host
-    initHost(code, maxPlayers, onReady, onPlayerListUpdate, onMessage, onDisconnected, onError) {
+    initHost(code, maxPlayers, onReady, onPlayerListUpdate, onMessage, onDisconnected, onError, onMidGameJoin) {
       this.disconnect();
       this.isHost = true;
       this.playerNum = 1;
+      this.isReady = true;
+      this.isGameInProgress = false;
       this.maxPlayers = Math.min(6, Math.max(2, parseInt(maxPlayers, 10) || 2));
       this.roomCode = code.toUpperCase().trim();
       this.connections.clear();
@@ -147,7 +193,8 @@
         onPlayerListUpdate,
         onMessage,
         onDisconnected,
-        onError
+        onError,
+        onMidGameJoin
       };
 
       // Cek status internet perangkat
@@ -207,7 +254,12 @@
 
           connection.on('open', () => {
             console.log(`[MP] Guest ${connection.peer} terhubung sebagai Pemain ${assignedNum}`);
-            this.connections.set(connection.peer, { conn: connection, playerNum: assignedNum });
+            this.connections.set(connection.peer, {
+              conn: connection,
+              playerNum: assignedNum,
+              name: `Pemain ${assignedNum}`,
+              isReady: false
+            });
             this.isConnected = true;
 
             const currentPlayers = this.getPlayerList();
@@ -218,7 +270,8 @@
                 type: 'welcome',
                 playerNum: assignedNum,
                 maxPlayers: this.maxPlayers,
-                players: currentPlayers
+                players: currentPlayers,
+                isGameInProgress: this.isGameInProgress
               });
             } catch (_) {}
 
@@ -244,6 +297,38 @@
             }
             if (data.type === 'pong') return;
 
+            // Info profil nama saat guest baru masuk
+            if (data.type === 'join-info') {
+              const info = this.connections.get(connection.peer);
+              if (info) {
+                if (data.name) info.name = String(data.name).slice(0, 15);
+                const currentPlayers = this.getPlayerList();
+                this.broadcast({ type: 'player-update', players: currentPlayers });
+                if (this.callbacks.onPlayerListUpdate) {
+                  this.callbacks.onPlayerListUpdate(currentPlayers, this.maxPlayers);
+                }
+                // Jika game sudah berjalan, picu onMidGameJoin agar Host kirim syncGameState
+                if (this.isGameInProgress && this.callbacks.onMidGameJoin) {
+                  this.callbacks.onMidGameJoin(connection, assignedNum, info.name);
+                }
+              }
+              return;
+            }
+
+            // Toggle Ready/Unready dari Guest
+            if (data.type === 'ready-toggle') {
+              const info = this.connections.get(connection.peer);
+              if (info) {
+                info.isReady = Boolean(data.isReady);
+                const currentPlayers = this.getPlayerList();
+                this.broadcast({ type: 'player-update', players: currentPlayers });
+                if (this.callbacks.onPlayerListUpdate) {
+                  this.callbacks.onPlayerListUpdate(currentPlayers, this.maxPlayers);
+                }
+              }
+              return;
+            }
+
             // Pastikan pesan membawa playerNum pengirim asli
             data.playerNum = assignedNum;
 
@@ -258,7 +343,9 @@
 
           const handleGuestLeave = () => {
             if (this.connections.has(connection.peer)) {
-              console.log(`[MP] Guest Pemain ${assignedNum} (${connection.peer}) terputus.`);
+              const leavingInfo = this.connections.get(connection.peer);
+              const leavingName = leavingInfo?.name || `Pemain ${assignedNum}`;
+              console.log(`[MP] Guest Pemain ${assignedNum} (${leavingName}) terputus.`);
               this.connections.delete(connection.peer);
               this.isConnected = this.connections.size > 0;
               const currentPlayers = this.getPlayerList();
@@ -275,7 +362,8 @@
               if (this.callbacks.onMessage) {
                 this.callbacks.onMessage({
                   type: 'player-disconnected',
-                  playerNum: assignedNum
+                  playerNum: assignedNum,
+                  name: leavingName
                 });
               }
             }
@@ -427,7 +515,13 @@
       } catch (_) {}
 
       this.guestConn.on('open', () => {
-        console.log('[MP] Koneksi guest ke host terbuka, menunggu handshake...');
+        console.log('[MP] Koneksi guest ke host terbuka, mengirim profil nama...');
+        try {
+          this.guestConn.send({
+            type: 'join-info',
+            name: this.playerName || 'Pemain'
+          });
+        } catch (_) {}
       });
 
       this.guestConn.on('data', (data) => {
@@ -442,6 +536,14 @@
           this.maxPlayers = data.maxPlayers || 2;
           this._lastPlayerList = data.players || [];
           this._startHeartbeat();
+
+          // Kirim ulang nama untuk memastikan sinkronisasi
+          try {
+            this.guestConn.send({
+              type: 'join-info',
+              name: this.playerName || `Pemain ${this.playerNum}`
+            });
+          } catch (_) {}
 
           if (this.callbacks.onConnected) {
             this.callbacks.onConnected(data);

@@ -565,6 +565,16 @@
       this.selectedDiff = 'medium';
       this.selectedCount = 12;
 
+      // Akumulasi skor & leaderboard
+      this.wordsSolvedCount = 0;
+      this.hintsUsedCount = 0;
+      this.completionBonus = 0;
+      this.coopScores = new Map(); // playerNum => { playerNum, name, score, wordsSolved, hintsUsed }
+
+      // Profil nama pemain
+      this.playerName = (typeof localStorage !== 'undefined') ? (localStorage.getItem('silangkata_player_name') || '') : '';
+      this._nameOnboardingCallback = null;
+
       this._cacheDOM();
       this._bindEvents();
       this.checkUrlJoinParams();
@@ -586,6 +596,9 @@
       this.btnMenuCoop = document.getElementById('btn-menu-coop');
 
       // Lobby Elements
+      this.lobbyIdentityBar = document.getElementById('lobby-identity-bar');
+      this.lobbyPlayerNameDisplay = document.getElementById('lobby-player-name-display');
+      this.btnEditPlayerName = document.getElementById('btn-edit-player-name');
       this.selectMaxPlayers = document.getElementById('select-max-players');
       this.btnCreateRoom = document.getElementById('btn-create-room');
       this.btnJoinRoom = document.getElementById('btn-join-room');
@@ -597,6 +610,7 @@
       this.btnShareLink = document.getElementById('btn-share-link');
       this.btnCopyCode = document.getElementById('btn-copy-code');
       this.roomPlayerSlots = document.getElementById('room-player-slots');
+      this.btnReadyCoop = document.getElementById('btn-ready-coop');
       this.btnStartCoop = document.getElementById('btn-start-coop');
       this.btnCancelRoom = document.getElementById('btn-cancel-room');
       this.badgeHostStatus = document.getElementById('badge-host-status');
@@ -608,6 +622,7 @@
       this.hudScore = document.getElementById('hud-score');
       this.btnAudioToggle = document.getElementById('btn-audio-toggle');
       this.btnHint = document.getElementById('btn-hint');
+      this.btnHudLeaderboard = document.getElementById('btn-hud-leaderboard');
       this.btnExitGame = document.getElementById('btn-exit-game');
       this.labelTheme = document.getElementById('label-theme');
       this.labelDiff = document.getElementById('label-diff');
@@ -634,15 +649,38 @@
       this.btnCloseClues = document.getElementById('btn-close-clues');
       this.cluesModal = document.getElementById('clues-modal');
 
-      // Result Elements
+      // Result Elements & Breakdown Details
       this.resultTitle = document.getElementById('result-title');
       this.resultSummary = document.getElementById('result-summary');
       this.resultScore = document.getElementById('result-score');
       this.resultBonus = document.getElementById('result-bonus');
       this.resultTime = document.getElementById('result-time');
+      this.bdWordsCount = document.getElementById('bd-words-count');
+      this.bdWordsPts = document.getElementById('bd-words-pts');
+      this.bdBonusRow = document.getElementById('bd-bonus-row');
+      this.bdBonusPts = document.getElementById('bd-bonus-pts');
+      this.bdHintsRow = document.getElementById('bd-hints-row');
+      this.bdHintsCount = document.getElementById('bd-hints-count');
+      this.bdHintsPts = document.getElementById('bd-hints-pts');
+      this.bdTotalPts = document.getElementById('bd-total-pts');
+      this.resultCoopLeaderboard = document.getElementById('result-coop-leaderboard');
+      this.resultLeaderboardList = document.getElementById('result-leaderboard-list');
       this.btnNextPuzzle = document.getElementById('btn-next-puzzle');
       this.btnShareResult = document.getElementById('btn-share-result');
       this.btnResultMenu = document.getElementById('btn-result-menu');
+
+      // Modals
+      this.modalPlayerName = document.getElementById('modal-player-name');
+      this.modalNameTitle = document.getElementById('modal-name-title');
+      this.modalNameDesc = document.getElementById('modal-name-desc');
+      this.inputProfileName = document.getElementById('input-profile-name');
+      this.btnSaveProfileName = document.getElementById('btn-save-profile-name');
+      this.btnCancelProfileName = document.getElementById('btn-cancel-profile-name');
+
+      this.modalLiveLeaderboard = document.getElementById('modal-live-leaderboard');
+      this.btnCloseLiveLeaderboard = document.getElementById('btn-close-live-leaderboard');
+      this.btnDismissLeaderboard = document.getElementById('btn-dismiss-leaderboard');
+      this.liveLeaderboardList = document.getElementById('live-leaderboard-list');
 
       // Overlays & Error Modals
       this.loadingOverlay = document.getElementById('loading-overlay');
@@ -661,12 +699,20 @@
     _bindEvents() {
       // Menu
       this.btnMenuSolo.addEventListener('click', () => this.startSoloGame());
-      this.btnMenuCoop.addEventListener('click', () => this.showScreen('screen-lobby'));
+      this.btnMenuCoop.addEventListener('click', () => this.openCoopLobby());
 
       // Lobby
       this.btnLobbyBack.addEventListener('click', () => this.showScreen('screen-menu'));
+      this.btnEditPlayerName?.addEventListener('click', () => this.showEditPlayerNameModal());
       this.btnCreateRoom.addEventListener('click', () => this.handleCreateRoom());
       this.btnJoinRoom.addEventListener('click', () => this.handleJoinRoom());
+
+      // Profile Name Modal
+      this.btnSaveProfileName?.addEventListener('click', () => this.savePlayerNameFromModal());
+      this.btnCancelProfileName?.addEventListener('click', () => this.hidePlayerNameModal());
+      this.inputProfileName?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.savePlayerNameFromModal();
+      });
 
       // Error Modal
       if (this.btnCloseErrorModal) {
@@ -679,6 +725,7 @@
       // Room
       if (this.btnShareLink) this.btnShareLink.addEventListener('click', () => this.shareRoomLink());
       if (this.btnCopyCode) this.btnCopyCode.addEventListener('click', () => this.copyRoomCode());
+      if (this.btnReadyCoop) this.btnReadyCoop.addEventListener('click', () => this.handleGuestReadyToggle());
       if (this.btnStartCoop) this.btnStartCoop.addEventListener('click', () => this.handleHostStartGame());
       this.btnCancelRoom.addEventListener('click', () => {
         window.MP.disconnect();
@@ -693,6 +740,10 @@
       });
 
       this.btnHint.addEventListener('click', () => this.useHint());
+      this.btnHudLeaderboard?.addEventListener('click', () => this.showLiveLeaderboardModal());
+      this.btnCloseLiveLeaderboard?.addEventListener('click', () => this.hideLiveLeaderboardModal());
+      this.btnDismissLeaderboard?.addEventListener('click', () => this.hideLiveLeaderboardModal());
+
       this.btnExitGame.addEventListener('click', () => {
         if (confirm('Yakin ingin keluar dari ronde ini?')) {
           this.endGameCleanup();
@@ -851,54 +902,254 @@
     }
 
     // ==========================================
+    // 4.5 PROFIL NAMA & LEADERBOARD CO-OP
+    // ==========================================
+    ensurePlayerName(callback) {
+      if (this.playerName && this.playerName.trim().length > 0) {
+        if (this.lobbyPlayerNameDisplay) {
+          this.lobbyPlayerNameDisplay.textContent = this.playerName;
+        }
+        if (window.MP) {
+          window.MP.setPlayerName(this.playerName);
+        }
+        if (callback) callback();
+        return;
+      }
+
+      // Tampilkan modal jika belum ada nama
+      if (this.modalPlayerName) {
+        this._nameOnboardingCallback = callback;
+        if (this.modalNameTitle) this.modalNameTitle.textContent = 'Siapa Namamu?';
+        if (this.modalNameDesc) this.modalNameDesc.textContent = 'Nama ini akan tampil di room dan papan peringkat bersama temanmu.';
+        if (this.btnCancelProfileName) this.btnCancelProfileName.style.display = 'none';
+        if (this.inputProfileName) this.inputProfileName.value = '';
+        this.modalPlayerName.classList.add('active');
+        setTimeout(() => this.inputProfileName?.focus(), 200);
+      } else {
+        this.playerName = 'Pemain ' + Math.floor(100 + Math.random() * 900);
+        if (callback) callback();
+      }
+    }
+
+    showEditPlayerNameModal() {
+      if (!this.modalPlayerName) return;
+      this._nameOnboardingCallback = null;
+      if (this.modalNameTitle) this.modalNameTitle.textContent = 'Ubah Nama Panggilan';
+      if (this.modalNameDesc) this.modalNameDesc.textContent = 'Perbarui nama yang tampil di room dan klasemen.';
+      if (this.btnCancelProfileName) this.btnCancelProfileName.style.display = 'block';
+      if (this.inputProfileName) {
+        this.inputProfileName.value = this.playerName || '';
+      }
+      this.modalPlayerName.classList.add('active');
+      setTimeout(() => this.inputProfileName?.focus(), 200);
+    }
+
+    savePlayerNameFromModal() {
+      const input = (this.inputProfileName?.value || '').trim();
+      if (!input) {
+        this.showToast('Masukkan minimal 1 karakter untuk namamu!');
+        return;
+      }
+      this.playerName = input.slice(0, 15);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('silangkata_player_name', this.playerName);
+      }
+      if (this.lobbyPlayerNameDisplay) {
+        this.lobbyPlayerNameDisplay.textContent = this.playerName;
+      }
+      if (window.MP) {
+        window.MP.setPlayerName(this.playerName);
+      }
+      this.modalPlayerName.classList.remove('active');
+      this.showToast(`Halo, ${this.playerName}! Siap bermain.`);
+
+      const cb = this._nameOnboardingCallback;
+      this._nameOnboardingCallback = null;
+      if (cb) cb();
+    }
+
+    hidePlayerNameModal() {
+      if (this.modalPlayerName) {
+        this.modalPlayerName.classList.remove('active');
+      }
+      this._nameOnboardingCallback = null;
+    }
+
+    openCoopLobby() {
+      this.ensurePlayerName(() => {
+        if (this.lobbyPlayerNameDisplay) {
+          this.lobbyPlayerNameDisplay.textContent = this.playerName;
+        }
+        this.showScreen('screen-lobby');
+      });
+    }
+
+    handleGuestReadyToggle() {
+      if (!window.MP || window.MP.isHost) return;
+      const nextState = !window.MP.isReady;
+      window.MP.setReady(nextState);
+
+      if (this.btnReadyCoop) {
+        if (nextState) {
+          this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action is-ready';
+          this.btnReadyCoop.innerHTML = '<span>⏳</span> BATALKAN SIAP';
+          this.showToast('Kamu berstatus SIAP! Menunggu Host memulai permainan.');
+        } else {
+          this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action';
+          this.btnReadyCoop.innerHTML = '<span>✅</span> SAYA SIAP BERMAIN';
+          this.showToast('Status siap dibatalkan.');
+        }
+      }
+      sound.playPop();
+    }
+
+    renderLeaderboardList(containerEl) {
+      if (!containerEl) return;
+      containerEl.innerHTML = '';
+
+      const myNum = window.MP ? window.MP.playerNum : 1;
+      const list = Array.from(this.coopScores.values());
+      // Urutkan berdasarkan skor tertinggi, lalu kata terbanyak
+      list.sort((a, b) => (b.score - a.score) || (b.wordsSolved - a.wordsSolved));
+
+      const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣'];
+
+      list.forEach((player, idx) => {
+        const itemEl = document.createElement('div');
+        itemEl.className = `leaderboard-item rank-${idx + 1} ${player.playerNum === myNum ? 'is-me' : ''}`;
+
+        const leftEl = document.createElement('div');
+        leftEl.className = 'leaderboard-left';
+
+        const rankEl = document.createElement('span');
+        rankEl.className = 'leaderboard-rank';
+        rankEl.textContent = medals[idx] || `${idx + 1}`;
+
+        const nameBoxEl = document.createElement('div');
+        nameBoxEl.className = 'leaderboard-name-box';
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'leaderboard-name';
+        nameEl.textContent = (player.playerNum === myNum) ? `👤 ${player.name} (Kamu)` : `👥 ${player.name}`;
+
+        const metaEl = document.createElement('span');
+        metaEl.className = 'leaderboard-meta';
+        metaEl.textContent = `${player.wordsSolved || 0} Kata terjawab • ${player.hintsUsed || 0} Petunjuk`;
+
+        nameBoxEl.appendChild(nameEl);
+        nameBoxEl.appendChild(metaEl);
+        leftEl.appendChild(rankEl);
+        leftEl.appendChild(nameBoxEl);
+
+        const scoreEl = document.createElement('span');
+        scoreEl.className = 'leaderboard-score';
+        scoreEl.textContent = `${player.score || 0} pts`;
+
+        itemEl.appendChild(leftEl);
+        itemEl.appendChild(scoreEl);
+        containerEl.appendChild(itemEl);
+      });
+    }
+
+    showLiveLeaderboardModal() {
+      if (!this.modalLiveLeaderboard) return;
+      this.renderLeaderboardList(this.liveLeaderboardList);
+      this.modalLiveLeaderboard.classList.add('active');
+    }
+
+    hideLiveLeaderboardModal() {
+      if (!this.modalLiveLeaderboard) return;
+      this.modalLiveLeaderboard.classList.remove('active');
+    }
+
+    // ==========================================
     // 5. CO-OP MULTIPLAYER FLOW
     // ==========================================
     async handleCreateRoom() {
-      this.mode = 'coop';
-      this.role = 'coop';
-      this.partnerCursors = new Map();
-      this.selectedTheme = this.themeSelect.value;
-      this.selectedDiff = this.diffSelect.value;
-      this.selectedCount = parseInt(this.wordCountSelect?.value, 10) || 12;
+      this.ensurePlayerName(async () => {
+        this.mode = 'coop';
+        this.role = 'coop';
+        this.partnerCursors = new Map();
+        this.selectedTheme = this.themeSelect.value;
+        this.selectedDiff = this.diffSelect.value;
+        this.selectedCount = parseInt(this.wordCountSelect?.value, 10) || 12;
 
-      const maxPlayers = parseInt(this.selectMaxPlayers?.value, 10) || 2;
-      const code = window.MP.generateRoomCode();
-      this.displayRoomCode.textContent = code;
-      if (this.btnShareLink) this.btnShareLink.disabled = true;
-      if (this.btnCopyCode) this.btnCopyCode.disabled = true;
+        const maxPlayers = parseInt(this.selectMaxPlayers?.value, 10) || 2;
+        const code = window.MP.generateRoomCode();
+        this.displayRoomCode.textContent = code;
+        if (this.btnShareLink) this.btnShareLink.disabled = true;
+        if (this.btnCopyCode) this.btnCopyCode.disabled = true;
 
-      // Inisialisasi visual slot pemain di layar room
-      this.renderRoomPlayerSlots([{ playerNum: 1, isHost: true }], maxPlayers, true);
-      this.showScreen('screen-room');
-
-      window.MP.initHost(
-        code,
-        maxPlayers,
-        // onReady
-        (readyCode, capacity) => {
-          this.displayRoomCode.textContent = readyCode;
-          if (this.btnShareLink) this.btnShareLink.disabled = false;
-          if (this.btnCopyCode) this.btnCopyCode.disabled = false;
-          this.renderRoomPlayerSlots(window.MP.getPlayerList(), capacity, true);
-          this.showToast('Room online! Bagikan tautan ke temanmu.');
-        },
-        // onPlayerListUpdate
-        (players, capacity) => {
-          this.renderRoomPlayerSlots(players, capacity, true);
-          if (players.length >= 2) {
-            this.showToast(`👥 Pemain baru bergabung! (${players.length}/${capacity})`);
-          }
-        },
-        // onMessage
-        (data) => this.handleMultiplayerMessage(data),
-        // onDisconnected
-        () => this.handlePartnerDisconnected(),
-        // onError
-        (err) => {
-          this.hideLoading();
-          this.showConnectionError(err, code, true);
+        if (window.MP) {
+          window.MP.setPlayerName(this.playerName);
         }
-      );
+
+        // Inisialisasi visual slot pemain di layar room
+        this.renderRoomPlayerSlots([{ playerNum: 1, isHost: true, name: this.playerName, isReady: true }], maxPlayers, true);
+        this.showScreen('screen-room');
+
+        window.MP.initHost(
+          code,
+          maxPlayers,
+          // onReady
+          (readyCode, capacity) => {
+            this.displayRoomCode.textContent = readyCode;
+            if (this.btnShareLink) this.btnShareLink.disabled = false;
+            if (this.btnCopyCode) this.btnCopyCode.disabled = false;
+            this.renderRoomPlayerSlots(window.MP.getPlayerList(), capacity, true);
+            this.showToast('Room online! Bagikan tautan ke temanmu.');
+          },
+          // onPlayerListUpdate
+          (players, capacity) => {
+            this.renderRoomPlayerSlots(players, capacity, true);
+            if (players.length >= 2) {
+              const lastPlayer = players[players.length - 1];
+              this.showToast(`👥 ${lastPlayer.name || ('Pemain ' + lastPlayer.playerNum)} bergabung! (${players.length}/${capacity})`);
+            }
+          },
+          // onMessage
+          (data) => this.handleMultiplayerMessage(data),
+          // onDisconnected
+          () => this.handlePartnerDisconnected(),
+          // onError
+          (err) => {
+            this.hideLoading();
+            this.showConnectionError(err, code, true);
+          },
+          // onMidGameJoin (Khusus jika ada pemain masuk saat game sudah berlangsung)
+          (connection, assignedNum, guestName) => {
+            if (!this.puzzle || this.isGameOver) return;
+            console.log(`[MP Host] Menyinkronkan game state ke Pemain ${assignedNum} (${guestName})...`);
+
+            if (!this.coopScores.has(assignedNum)) {
+              this.coopScores.set(assignedNum, {
+                playerNum: assignedNum,
+                name: guestName || `Pemain ${assignedNum}`,
+                score: 0,
+                wordsSolved: 0,
+                hintsUsed: 0
+              });
+            }
+
+            try {
+              connection.send({
+                type: 'syncGameState',
+                puzzle: this.puzzle,
+                userGrid: this.userGrid,
+                cellSources: this.cellSources,
+                elapsedSeconds: this.elapsedSeconds,
+                leaderboard: Array.from(this.coopScores.entries()),
+                playerNum: assignedNum
+              });
+            } catch (e) {
+              console.warn('[MP Host] Gagal sync state ke rejoining guest:', e);
+            }
+
+            this.showToast(`🎉 ${guestName || ('Pemain ' + assignedNum)} bergabung ke permainan!`);
+            this.setPartnerStatus('connected');
+          }
+        );
+      });
     }
 
     renderRoomPlayerSlots(players = [], maxPlayers = 2, isHost = false) {
@@ -914,7 +1165,8 @@
         const slotEl = document.createElement('div');
         slotEl.className = 'player-slot';
 
-        const isFilled = playerMap.has(i);
+        const pData = playerMap.get(i);
+        const isFilled = Boolean(pData);
         const isMe = (i === myPlayerNum);
 
         const leftEl = document.createElement('div');
@@ -926,11 +1178,12 @@
         const nameEl = document.createElement('span');
         nameEl.className = 'player-name';
 
-        let nameLabel = `👥 Pemain ${i}`;
+        let displayName = pData?.name || `Pemain ${i}`;
+        let nameLabel = '';
         if (i === 1) {
-          nameLabel = isMe ? '👤 Kamu (Host - Pemain 1)' : '👑 Host (Pemain 1)';
+          nameLabel = isMe ? `👤 ${displayName} (Host/Kamu)` : `👑 ${displayName} (Host)`;
         } else if (isFilled) {
-          nameLabel = isMe ? `👤 Kamu (Pemain ${i})` : `👥 Teman (Pemain ${i})`;
+          nameLabel = isMe ? `👤 ${displayName} (Kamu)` : `👥 ${displayName}`;
         } else {
           nameLabel = `👥 Pemain ${i}`;
         }
@@ -940,27 +1193,63 @@
         leftEl.appendChild(nameEl);
 
         const badgeEl = document.createElement('span');
-        badgeEl.className = `badge ${isFilled ? 'badge-ready' : 'badge-waiting'}`;
-        badgeEl.textContent = isFilled ? 'TERHUBUNG' : 'MENUNGGU...';
+        if (!isFilled) {
+          badgeEl.className = 'badge badge-waiting';
+          badgeEl.textContent = 'MENUNGGU...';
+        } else if (i === 1) {
+          badgeEl.className = 'badge badge-host';
+          badgeEl.textContent = '👑 HOST';
+        } else if (pData.isReady) {
+          badgeEl.className = 'badge badge-ready';
+          badgeEl.textContent = '✅ SIAP';
+        } else {
+          badgeEl.className = 'badge badge-unready';
+          badgeEl.textContent = '⏳ BELUM SIAP';
+        }
 
         slotEl.appendChild(leftEl);
         slotEl.appendChild(badgeEl);
         this.roomPlayerSlots.appendChild(slotEl);
       }
 
+      const guests = players.filter(p => !p.isHost);
+      const allGuestsReady = guests.length > 0 && guests.every(p => p.isReady);
+
       // Tombol Mulai Permainan (Khusus Host)
       if (this.btnStartCoop) {
         if (isHost) {
           this.btnStartCoop.style.display = 'block';
-          if (players.length >= 2) {
-            this.btnStartCoop.disabled = false;
-            this.btnStartCoop.innerHTML = `<span>🚀</span> MULAI PERMAINAN SEKARANG (${players.length}/${maxPlayers})`;
-          } else {
+          if (guests.length === 0) {
             this.btnStartCoop.disabled = true;
             this.btnStartCoop.innerHTML = `<span>⏳</span> MENUNGGU TEMAN GABUNG (1/${maxPlayers})`;
+          } else if (!allGuestsReady) {
+            const readyCount = guests.filter(p => p.isReady).length;
+            this.btnStartCoop.disabled = true;
+            this.btnStartCoop.innerHTML = `<span>⏳</span> MENUNGGU SEMUA SIAP (${readyCount}/${guests.length} Siap)`;
+          } else {
+            this.btnStartCoop.disabled = false;
+            this.btnStartCoop.innerHTML = `<span>🚀</span> MULAI PERMAINAN SEKARANG (${players.length}/${maxPlayers})`;
           }
         } else {
           this.btnStartCoop.style.display = 'none';
+        }
+      }
+
+      // Tombol Siap (Khusus Guest)
+      if (this.btnReadyCoop) {
+        if (!isHost) {
+          this.btnReadyCoop.style.display = 'block';
+          const myData = playerMap.get(myPlayerNum);
+          const isMyReady = myData ? myData.isReady : window.MP.isReady;
+          if (isMyReady) {
+            this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action is-ready';
+            this.btnReadyCoop.innerHTML = '<span>⏳</span> BATALKAN SIAP';
+          } else {
+            this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action';
+            this.btnReadyCoop.innerHTML = '<span>✅</span> SAYA SIAP BERMAIN';
+          }
+        } else {
+          this.btnReadyCoop.style.display = 'none';
         }
       }
     }
@@ -969,6 +1258,14 @@
       const players = window.MP ? window.MP.getPlayerList() : [];
       if (players.length < 2) {
         this.showToast('Tunggu minimal 1 pemain lain bergabung!');
+        return;
+      }
+
+      const guests = players.filter(p => !p.isHost);
+      const allReady = guests.length > 0 && guests.every(p => p.isReady);
+      if (!allReady) {
+        const readyCount = guests.filter(p => p.isReady).length;
+        this.showToast(`Tunggu semua pemain siap (${readyCount}/${guests.length} Siap)!`);
         return;
       }
 
@@ -982,10 +1279,27 @@
         difficulty: puzzleData.difficulty || 'medium'
       };
 
+      if (window.MP) {
+        window.MP.isGameInProgress = true;
+      }
+
+      // Inisialisasi coopScores
+      this.coopScores.clear();
+      players.forEach(p => {
+        this.coopScores.set(p.playerNum, {
+          playerNum: p.playerNum,
+          name: p.name || `Pemain ${p.playerNum}`,
+          score: 0,
+          wordsSolved: 0,
+          hintsUsed: 0
+        });
+      });
+
       // Kirim puzzle utuh ke seluruh guest terhubung
       window.MP.send({
         type: 'init',
-        puzzle: this.puzzle
+        puzzle: this.puzzle,
+        players: players
       });
 
       this.hideLoading();
@@ -1003,7 +1317,7 @@
         return;
       }
       if (this.inputRoomCode) this.inputRoomCode.value = code;
-      this.joinRoomByCode(code);
+      this.ensurePlayerName(() => this.joinRoomByCode(code));
     }
 
     joinRoomByCode(code) {
@@ -1015,6 +1329,10 @@
       this.partnerCursors = new Map();
       this.showLoading('Menghubungi room ' + cleanCode + '...');
 
+      if (window.MP) {
+        window.MP.setPlayerName(this.playerName);
+      }
+
       window.MP.initGuest(
         cleanCode,
         // onConnected
@@ -1025,7 +1343,7 @@
           if (this.btnCopyCode) this.btnCopyCode.disabled = false;
           this.renderRoomPlayerSlots(welcomeData.players, welcomeData.maxPlayers, false);
           this.showScreen('screen-room');
-          this.showToast(`Berhasil gabung sebagai Pemain ${welcomeData.playerNum}! Menunggu Host memulai...`);
+          this.showToast(`Berhasil gabung sebagai ${this.playerName || ('Pemain ' + welcomeData.playerNum)}! Klik SIAP untuk bermain.`);
         },
         // onPlayerListUpdate
         (players, capacity) => {
@@ -1175,8 +1493,8 @@
             this.inputRoomCode.value = roomCode;
           }
 
-          // Otomatis langsung join ke room tanpa perlu input manual
-          this.joinRoomByCode(roomCode);
+          // Otomatis langsung join ke room setelah memastikan nama pemain
+          this.ensurePlayerName(() => this.joinRoomByCode(roomCode));
         }
       } catch (err) {
         console.warn('Error membaca parameter URL join room:', err);
@@ -1257,7 +1575,34 @@
           // Diterima guest saat puzzle siap
           this.puzzle = msg.puzzle;
           this.hideLoading();
+          this.coopScores.clear();
+          if (msg.players && Array.isArray(msg.players)) {
+            msg.players.forEach(p => {
+              this.coopScores.set(p.playerNum, {
+                playerNum: p.playerNum,
+                name: p.name || `Pemain ${p.playerNum}`,
+                score: 0,
+                wordsSolved: 0,
+                hintsUsed: 0
+              });
+            });
+          }
           this.initGameBoard();
+          break;
+
+        case 'syncGameState':
+          // Rejoin / Mid-game join synchronization
+          this.puzzle = msg.puzzle;
+          this.hideLoading();
+          this.userGrid = msg.userGrid || {};
+          this.cellSources = msg.cellSources || {};
+          this.elapsedSeconds = msg.elapsedSeconds || 0;
+          this.coopScores.clear();
+          if (msg.leaderboard && Array.isArray(msg.leaderboard)) {
+            msg.leaderboard.forEach(([k, v]) => this.coopScores.set(Number(k), v));
+          }
+          this.initGameBoard(true); // true = restore state
+          this.showToast('🚀 Terhubung ke permainan yang sedang berlangsung!');
           break;
 
         case 'letter': {
@@ -1285,14 +1630,16 @@
           this.renderPartnerCursors();
           break;
 
-        case 'player-disconnected':
+        case 'player-disconnected': {
           this.partnerCursors.delete(pNum);
           this.renderPartnerCursors();
-          this.showToast(`Pemain ${pNum} meninggalkan ronde.`);
+          const dName = msg.name || `Pemain ${pNum}`;
+          this.showToast(`⚠️ ${dName} meninggalkan ronde.`);
           this.setPartnerStatus('connected');
           break;
+        }
 
-        case 'wordSolved':
+        case 'wordSolved': {
           // Update kata yang dipecahkan partner
           if (this.puzzle && this.puzzle.words[msg.wordIdx]) {
             const solvedWord = this.puzzle.words[msg.wordIdx];
@@ -1308,16 +1655,49 @@
               this.updateCellVisual(r, c);
             }
 
-            this.showToast(`✨ Pemain ${pNum} berhasil menjawab "${solvedWord.word}"! (+100)`);
-          }
-          if (msg.score !== undefined) {
-            this.score = msg.score;
-            this.hudScore.textContent = this.score;
+            const solverNum = msg.solverNum || pNum;
+            const solverName = msg.solverName || `Pemain ${solverNum}`;
+            const sInfo = this.coopScores.get(solverNum) || {
+              playerNum: solverNum,
+              name: solverName,
+              score: 0,
+              wordsSolved: 0,
+              hintsUsed: 0
+            };
+            sInfo.score += 100;
+            sInfo.wordsSolved += 1;
+            this.coopScores.set(solverNum, sInfo);
+
+            this.showToast(`✨ ${solverName} berhasil menjawab "${solvedWord.word}"! (+100)`);
           }
           sound.playCorrect();
           triggerHaptic([40, 40, 80]);
           this.refreshSolvedVisuals();
+          if (this.modalLiveLeaderboard?.classList.contains('active')) {
+            this.renderLeaderboardList(this.liveLeaderboardList);
+          }
           break;
+        }
+
+        case 'hintUsed': {
+          const hNum = msg.playerNum || pNum;
+          const hName = msg.playerName || `Pemain ${hNum}`;
+          const hInfo = this.coopScores.get(hNum) || {
+            playerNum: hNum,
+            name: hName,
+            score: 0,
+            wordsSolved: 0,
+            hintsUsed: 0
+          };
+          hInfo.score = Math.max(0, hInfo.score - 50);
+          hInfo.hintsUsed += 1;
+          this.coopScores.set(hNum, hInfo);
+          this.showToast(`💡 ${hName} menggunakan petunjuk (-50)`);
+          if (this.modalLiveLeaderboard?.classList.contains('active')) {
+            this.renderLeaderboardList(this.liveLeaderboardList);
+          }
+          break;
+        }
 
         case 'scoreUpdate':
           if (msg.score !== undefined) {
@@ -1327,7 +1707,9 @@
           break;
 
         case 'finish':
-          this.score = msg.finalScore;
+          if (msg.finalScore !== undefined) {
+            this.score = msg.finalScore;
+          }
           if (msg.elapsedSeconds !== undefined) {
             this.elapsedSeconds = msg.elapsedSeconds;
           }
@@ -1340,11 +1722,10 @@
       this.hideLoading();
       this.partnerCursors.clear();
       this.renderPartnerCursors();
-      this.setPartnerStatus('disconnected');
 
-      // Modal "PARTNER TERPUTUS" HANYA boleh muncul jika pemain sedang berada di dalam gameplay aktif!
       const isInGame = this.puzzle && this.screenGame && this.screenGame.classList.contains('active');
-      if (this.isGameOver || !isInGame) {
+
+      if (!isInGame || this.isGameOver) {
         this.showToast('Koneksi terputus dari room.', 3500);
         if (this.disconnectOverlay) {
           this.disconnectOverlay.classList.remove('active');
@@ -1355,7 +1736,19 @@
         return;
       }
 
-      this.disconnectOverlay.classList.add('active');
+      // Jika game sedang aktif:
+      // Host tidak memblokir layar jika guest terputus (guest bisa reconnect kapan saja)
+      if (window.MP && window.MP.isHost) {
+        this.showToast('⚠️ Seorang pemain terputus dari room. Permainan tetap berlanjut...', 4000);
+        this.setPartnerStatus('connected');
+        return;
+      }
+
+      // Jika guest kehilangan koneksi ke Host:
+      this.showToast('⚠️ Koneksi ke Host terputus.', 4000);
+      if (this.disconnectOverlay) {
+        this.disconnectOverlay.classList.add('active');
+      }
     }
 
     setPartnerStatus(state, pNum = 2) {
@@ -1409,18 +1802,31 @@
     // ==========================================
     // 7. BOARD RENDERING & INITIALIZATION
     // ==========================================
-    initGameBoard() {
+    initGameBoard(isRestore = false) {
       this.isGameOver = false;
       this.hintUsed = false;
-      this.score = 0;
-      this.elapsedSeconds = 0;
-      this.userGrid = {};
-      this.cellSources = {};
-      this.activeCell = null;
+
+      if (!isRestore) {
+        this.score = 0;
+        this.elapsedSeconds = 0;
+        this.userGrid = {};
+        this.cellSources = {};
+        this.activeCell = null;
+        this.wordsSolvedCount = 0;
+        this.hintsUsedCount = 0;
+        this.completionBonus = 0;
+      }
+
+      // Leaderboard Button in HUD
+      if (this.btnHudLeaderboard) {
+        this.btnHudLeaderboard.style.display = (this.mode === 'coop') ? 'flex' : 'none';
+      }
 
       // Setup HUD
-      this.hudScore.textContent = '0';
-      this.hudTimer.textContent = '00:00';
+      this.hudScore.textContent = this.score;
+      const m = Math.floor(this.elapsedSeconds / 60).toString().padStart(2, '0');
+      const s = (this.elapsedSeconds % 60).toString().padStart(2, '0');
+      this.hudTimer.textContent = `${m}:${s}`;
       const rawTheme = (this.puzzle.theme || '').toLowerCase();
       const isMixed = !rawTheme || rawTheme === 'acak' || rawTheme === 'campuran';
       this.labelTheme.textContent = isMixed ? 'CAMPURAN' : rawTheme.toUpperCase();
@@ -1447,11 +1853,20 @@
       // Render Grid
       this.renderGrid();
 
+      // If restoring, populate cells from userGrid and check status
+      if (isRestore) {
+        for (const [key, char] of Object.entries(this.userGrid)) {
+          const [r, c] = key.split('-').map(Number);
+          this.updateCellVisual(r, c);
+        }
+        this.checkWordsStatus(false);
+      }
+
       // Mulai Timer
-      this.startTimer();
+      this.startTimer(!isRestore);
 
       // Pilih kata pertama secara otomatis
-      const firstPlayableWord = this.puzzle.words[0];
+      const firstPlayableWord = this.puzzle.words.find(w => !w.solved) || this.puzzle.words[0];
 
       if (firstPlayableWord) {
         this.selectWord(firstPlayableWord);
@@ -2099,6 +2514,7 @@
         if (isComplete && isCorrect) {
           w.solved = true;
           newlySolved = true;
+          this.wordsSolvedCount++;
           this.score += 100;
           this.hudScore.textContent = this.score;
 
@@ -2109,9 +2525,23 @@
           }
 
           if (this.mode === 'coop') {
+            const myNum = window.MP ? window.MP.playerNum : 1;
+            const myInfo = this.coopScores.get(myNum) || {
+              playerNum: myNum,
+              name: this.playerName || `Pemain ${myNum}`,
+              score: 0,
+              wordsSolved: 0,
+              hintsUsed: 0
+            };
+            myInfo.score += 100;
+            myInfo.wordsSolved += 1;
+            this.coopScores.set(myNum, myInfo);
+
             window.MP.send({
               type: 'wordSolved',
               wordIdx: idx,
+              solverNum: myNum,
+              solverName: this.playerName,
               score: this.score
             });
           }
@@ -2125,6 +2555,7 @@
       // Cek apakah semua kata sudah terpecahkan
       const allSolved = this.puzzle.words.every(w => w.solved);
       if (allSolved && !this.isGameOver) {
+        this.completionBonus = 300;
         this.score += 300; // Bonus tuntas semua kata
         this.hudScore.textContent = this.score;
 
@@ -2233,7 +2664,8 @@
         this.cellSources[key] = 'self';
 
         // Pengurangan 50 poin
-        this.score -= 50;
+        this.score = Math.max(0, this.score - 50);
+        this.hintsUsedCount++;
         this.hudScore.textContent = this.score;
 
         this.updateCellVisual(chosen.r, chosen.c);
@@ -2242,12 +2674,29 @@
         this.showToast(`💡 Buka huruf '${chosen.char}' (-50 Poin)`);
 
         if (this.mode === 'coop') {
+          const myNum = window.MP ? window.MP.playerNum : 1;
+          const myInfo = this.coopScores.get(myNum) || {
+            playerNum: myNum,
+            name: this.playerName || `Pemain ${myNum}`,
+            score: 0,
+            wordsSolved: 0,
+            hintsUsed: 0
+          };
+          myInfo.score = Math.max(0, myInfo.score - 50);
+          myInfo.hintsUsed += 1;
+          this.coopScores.set(myNum, myInfo);
+
           window.MP.send({
             type: 'letter',
             r: chosen.r,
             c: chosen.c,
             letter: chosen.char,
             role: this.role
+          });
+          window.MP.send({
+            type: 'hintUsed',
+            playerNum: myNum,
+            playerName: this.playerName
           });
           window.MP.send({
             type: 'scoreUpdate',
@@ -2262,9 +2711,11 @@
     // ==========================================
     // 10. STOPWATCH TIMER & RESULT
     // ==========================================
-    startTimer() {
+    startTimer(resetSeconds = false) {
       this.stopTimer();
-      this.elapsedSeconds = 0;
+      if (resetSeconds) {
+        this.elapsedSeconds = 0;
+      }
       this.updateTimerDisplay();
 
       // Stopwatch: mulai dari 00:00, bertambah 1 detik, bebas main tanpa timeout
@@ -2309,9 +2760,40 @@
       }
 
       this.resultSummary.textContent = `Kamu menyelesaikan ${solvedCount} dari ${totalCount} kata.`;
+
+      // Kalkulasi Akumulasi Skor Transparan
+      const wordsPts = this.wordsSolvedCount * 100;
+      const bonusPts = isVictory ? 300 : 0;
+      const hintPenalty = this.hintsUsedCount * 50;
+      const totalAccumulated = Math.max(0, wordsPts + bonusPts - hintPenalty);
+      this.score = totalAccumulated;
+
       this.resultScore.textContent = this.score;
       if (this.resultTime) {
         this.resultTime.textContent = `⏱ ${m}:${s}`;
+      }
+
+      // Tampilkan Breakdown Rincian
+      if (this.bdWordsCount) this.bdWordsCount.textContent = this.wordsSolvedCount;
+      if (this.bdWordsPts) this.bdWordsPts.textContent = `+${wordsPts} Poin`;
+
+      if (this.bdBonusRow) this.bdBonusRow.style.display = isVictory ? 'flex' : 'none';
+      if (this.bdBonusPts) this.bdBonusPts.textContent = `+${bonusPts} Poin`;
+
+      if (this.bdHintsRow) {
+        this.bdHintsRow.style.display = this.hintsUsedCount > 0 ? 'flex' : 'none';
+        if (this.bdHintsCount) this.bdHintsCount.textContent = this.hintsUsedCount;
+        if (this.bdHintsPts) this.bdHintsPts.textContent = `-${hintPenalty} Poin`;
+      }
+
+      if (this.bdTotalPts) this.bdTotalPts.textContent = `${this.score} Poin`;
+
+      // Render Leaderboard jika Mode Co-op
+      if (this.mode === 'coop' && this.resultCoopLeaderboard && this.resultLeaderboardList) {
+        this.resultCoopLeaderboard.style.display = 'block';
+        this.renderLeaderboardList(this.resultLeaderboardList);
+      } else if (this.resultCoopLeaderboard) {
+        this.resultCoopLeaderboard.style.display = 'none';
       }
 
       this.showScreen('screen-result');
@@ -2336,6 +2818,9 @@
       this.stopTimer();
       this.isGameOver = true;
       this.partnerCursors.clear();
+      if (window.MP) {
+        window.MP.isGameInProgress = false;
+      }
       if (this.mode === 'coop') {
         window.MP.disconnect();
       }
