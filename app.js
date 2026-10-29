@@ -1041,14 +1041,67 @@
         leftEl.appendChild(rankEl);
         leftEl.appendChild(nameBoxEl);
 
+        const rightEl = document.createElement('div');
+        rightEl.className = 'leaderboard-right';
+        rightEl.style.display = 'flex';
+        rightEl.style.alignItems = 'center';
+        rightEl.style.gap = '8px';
+
         const scoreEl = document.createElement('span');
         scoreEl.className = 'leaderboard-score';
         scoreEl.textContent = `${player.score || 0} pts`;
+        rightEl.appendChild(scoreEl);
+
+        const currentHostNum = window.MP ? (window.MP.hostPlayerNum || 1) : 1;
+        const amIHost = (myNum === currentHostNum);
+
+        if (containerEl === this.liveLeaderboardList && amIHost && player.playerNum !== myNum) {
+          const btnTransfer = document.createElement('button');
+          btnTransfer.className = 'btn-slot-action btn-transfer';
+          btnTransfer.title = `Pindahkan Host ke ${player.name}`;
+          btnTransfer.innerHTML = '👑';
+          btnTransfer.onclick = (e) => {
+            e.stopPropagation();
+            this.confirmTransferHost(player.playerNum, player.name);
+            this.hideLiveLeaderboardModal();
+          };
+
+          const btnKick = document.createElement('button');
+          btnKick.className = 'btn-slot-action btn-kick';
+          btnKick.title = `Keluarkan ${player.name}`;
+          btnKick.innerHTML = '🚫';
+          btnKick.onclick = (e) => {
+            e.stopPropagation();
+            this.confirmKickPlayer(player.playerNum, player.name);
+            this.hideLiveLeaderboardModal();
+          };
+
+          rightEl.appendChild(btnTransfer);
+          rightEl.appendChild(btnKick);
+        }
 
         itemEl.appendChild(leftEl);
-        itemEl.appendChild(scoreEl);
+        itemEl.appendChild(rightEl);
         containerEl.appendChild(itemEl);
       });
+    }
+
+    confirmTransferHost(targetPlayerNum, targetName) {
+      if (!window.MP) return;
+      const ok = window.confirm(`Pindahkan kepemilikan Host room kepada ${targetName || ('Pemain ' + targetPlayerNum)}?`);
+      if (ok) {
+        window.MP.transferHost(targetPlayerNum);
+        this.showToast(`👑 ${targetName || ('Pemain ' + targetPlayerNum)} sekarang menjadi Host room!`);
+      }
+    }
+
+    confirmKickPlayer(targetPlayerNum, targetName) {
+      if (!window.MP) return;
+      const ok = window.confirm(`Keluarkan ${targetName || ('Pemain ' + targetPlayerNum)} dari room?`);
+      if (ok) {
+        window.MP.kickPlayer(targetPlayerNum);
+        this.showToast(`🚫 ${targetName || ('Pemain ' + targetPlayerNum)} telah dikeluarkan dari room.`);
+      }
     }
 
     showLiveLeaderboardModal() {
@@ -1159,7 +1212,9 @@
       const playerMap = new Map();
       players.forEach(p => playerMap.set(p.playerNum, p));
 
+      const currentHostNum = window.MP ? (window.MP.hostPlayerNum || 1) : (isHost ? 1 : 1);
       const myPlayerNum = window.MP ? window.MP.playerNum : (isHost ? 1 : 2);
+      const amIHost = (myPlayerNum === currentHostNum);
 
       for (let i = 1; i <= maxPlayers; i++) {
         const slotEl = document.createElement('div');
@@ -1168,6 +1223,7 @@
         const pData = playerMap.get(i);
         const isFilled = Boolean(pData);
         const isMe = (i === myPlayerNum);
+        const isSlotHost = (i === currentHostNum);
 
         const leftEl = document.createElement('div');
         leftEl.className = 'player-slot-left';
@@ -1180,8 +1236,8 @@
 
         let displayName = pData?.name || `Pemain ${i}`;
         let nameLabel = '';
-        if (i === 1) {
-          nameLabel = isMe ? `👤 ${displayName} (Host/Kamu)` : `👑 ${displayName} (Host)`;
+        if (isSlotHost) {
+          nameLabel = isMe ? `👑 ${displayName} (Host/Kamu)` : `👑 ${displayName} (Host)`;
         } else if (isFilled) {
           nameLabel = isMe ? `👤 ${displayName} (Kamu)` : `👥 ${displayName}`;
         } else {
@@ -1192,11 +1248,14 @@
         leftEl.appendChild(dotEl);
         leftEl.appendChild(nameEl);
 
+        const rightEl = document.createElement('div');
+        rightEl.className = 'player-slot-right';
+
         const badgeEl = document.createElement('span');
         if (!isFilled) {
           badgeEl.className = 'badge badge-waiting';
           badgeEl.textContent = 'MENUNGGU...';
-        } else if (i === 1) {
+        } else if (isSlotHost) {
           badgeEl.className = 'badge badge-host';
           badgeEl.textContent = '👑 HOST';
         } else if (pData.isReady) {
@@ -1206,18 +1265,42 @@
           badgeEl.className = 'badge badge-unready';
           badgeEl.textContent = '⏳ BELUM SIAP';
         }
+        rightEl.appendChild(badgeEl);
+
+        if (amIHost && isFilled && !isMe) {
+          const btnTransfer = document.createElement('button');
+          btnTransfer.className = 'btn-slot-action btn-transfer';
+          btnTransfer.title = `Pindahkan Host ke ${displayName}`;
+          btnTransfer.innerHTML = '👑';
+          btnTransfer.onclick = (e) => {
+            e.stopPropagation();
+            this.confirmTransferHost(i, displayName);
+          };
+
+          const btnKick = document.createElement('button');
+          btnKick.className = 'btn-slot-action btn-kick';
+          btnKick.title = `Keluarkan ${displayName}`;
+          btnKick.innerHTML = '🚫';
+          btnKick.onclick = (e) => {
+            e.stopPropagation();
+            this.confirmKickPlayer(i, displayName);
+          };
+
+          rightEl.appendChild(btnTransfer);
+          rightEl.appendChild(btnKick);
+        }
 
         slotEl.appendChild(leftEl);
-        slotEl.appendChild(badgeEl);
+        slotEl.appendChild(rightEl);
         this.roomPlayerSlots.appendChild(slotEl);
       }
 
-      const guests = players.filter(p => !p.isHost);
+      const guests = players.filter(p => p.playerNum !== currentHostNum);
       const allGuestsReady = guests.length > 0 && guests.every(p => p.isReady);
 
       // Tombol Mulai Permainan (Khusus Host)
       if (this.btnStartCoop) {
-        if (isHost) {
+        if (amIHost) {
           this.btnStartCoop.style.display = 'block';
           if (guests.length === 0) {
             this.btnStartCoop.disabled = true;
@@ -1237,10 +1320,10 @@
 
       // Tombol Siap (Khusus Guest)
       if (this.btnReadyCoop) {
-        if (!isHost) {
+        if (!amIHost) {
           this.btnReadyCoop.style.display = 'block';
           const myData = playerMap.get(myPlayerNum);
-          const isMyReady = myData ? myData.isReady : window.MP.isReady;
+          const isMyReady = myData ? myData.isReady : (window.MP ? window.MP.isReady : false);
           if (isMyReady) {
             this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action is-ready';
             this.btnReadyCoop.innerHTML = '<span>⏳</span> BATALKAN SIAP';
@@ -1261,11 +1344,19 @@
         return;
       }
 
-      const guests = players.filter(p => !p.isHost);
+      const currentHost = window.MP ? (window.MP.hostPlayerNum || 1) : 1;
+      const guests = players.filter(p => p.playerNum !== currentHost);
       const allReady = guests.length > 0 && guests.every(p => p.isReady);
       if (!allReady) {
         const readyCount = guests.filter(p => p.isReady).length;
         this.showToast(`Tunggu semua pemain siap (${readyCount}/${guests.length} Siap)!`);
+        return;
+      }
+
+      // Jika pemain ini adalah Host ruangan tetapi bukan Host jaringan (Network Host/Peer P1)
+      if (window.MP && !window.MP.isHost) {
+        window.MP.send({ type: 'request-start-game' });
+        this.showLoading('Meminta room memulai permainan...');
         return;
       }
 
@@ -1705,6 +1796,57 @@
             this.hudScore.textContent = this.score;
           }
           break;
+
+        case 'request-start-game':
+          if (window.MP && window.MP.isHost) {
+            this.handleHostStartGame();
+          }
+          break;
+
+        case 'kicked':
+          this.hideLoading();
+          if (this.timerInterval) clearInterval(this.timerInterval);
+          this.isGameOver = true;
+          if (this.disconnectOverlay) {
+            this.disconnectOverlay.classList.remove('active');
+          }
+          if (this.modalLiveLeaderboard) {
+            this.modalLiveLeaderboard.classList.remove('active');
+          }
+          this.showScreen('screen-lobby');
+          this.showToast(msg.reason || '🚫 Kamu telah dikeluarkan dari room oleh Host.', 5000);
+          break;
+
+        case 'player-kicked-notice':
+          if (msg.playerNum) {
+            this.partnerCursors.delete(msg.playerNum);
+            this.renderPartnerCursors();
+            const kName = msg.name || `Pemain ${msg.playerNum}`;
+            this.showToast(`🚫 ${kName} telah dikeluarkan oleh Host.`, 4000);
+            if (this.modalLiveLeaderboard?.classList.contains('active')) {
+              this.renderLeaderboardList(this.liveLeaderboardList);
+            }
+          }
+          break;
+
+        case 'host-transferred': {
+          const newHostNum = msg.newHostPlayerNum;
+          const newHostName = msg.newHostName || `Pemain ${newHostNum}`;
+          const amINewHost = window.MP && (window.MP.playerNum === newHostNum);
+          if (amINewHost) {
+            this.showToast(`👑 Kamu sekarang adalah Host room!`, 4500);
+          } else {
+            this.showToast(`👑 ${newHostName} sekarang menjadi Host room.`, 3500);
+          }
+          if (this.screenRoom && this.screenRoom.classList.contains('active')) {
+            const list = window.MP ? window.MP.getPlayerList() : [];
+            this.renderRoomPlayerSlots(list, window.MP ? window.MP.maxPlayers : 2, amINewHost);
+          }
+          if (this.modalLiveLeaderboard?.classList.contains('active')) {
+            this.renderLeaderboardList(this.liveLeaderboardList);
+          }
+          break;
+        }
 
         case 'finish':
           if (msg.finalScore !== undefined) {

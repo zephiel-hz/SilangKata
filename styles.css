@@ -1430,6 +1430,44 @@ body.in-game #app,
   border: 1px solid rgba(56, 189, 248, 0.4) !important;
 }
 
+/* Slot Actions (Transfer Host & Kick) */
+.player-slot-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-slot-action {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+  color: var(--text-main);
+  padding: 0;
+}
+
+.btn-slot-action:hover {
+  background: #334155;
+  transform: scale(1.08);
+}
+
+.btn-slot-action.btn-kick:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+}
+
+.btn-slot-action.btn-transfer:hover {
+  background: rgba(234, 179, 8, 0.25);
+  border-color: #eab308;
+}
+
 /* Score Breakdown Details in Result Screen */
 .score-breakdown-details {
   background: rgba(15, 23, 42, 0.65);

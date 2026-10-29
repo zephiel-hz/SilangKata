@@ -47,6 +47,7 @@
       this.isConnected = false;
       this.playerName = 'Pemain';
       this.isReady = false;
+      this.hostPlayerNum = 1;
       this.isGameInProgress = false;
       this.connections = new Map(); // Untuk Host: peerId -> { conn, playerNum, name, isReady }
       this.guestConn = null; // Untuk Guest: data channel ke Host
@@ -98,12 +99,14 @@
     }
 
     allGuestsReady() {
-      if (!this.isHost) return false;
-      if (this.connections.size === 0) return false;
-      for (const info of this.connections.values()) {
-        if (!info.isReady) return false;
-      }
-      return true;
+      const hNum = this.hostPlayerNum || 1;
+      const guests = this.getPlayerList().filter(p => p.playerNum !== hNum);
+      if (guests.length === 0) return false;
+      return guests.every(p => p.isReady);
+    }
+
+    isCurrentHost() {
+      return this.playerNum === (this.hostPlayerNum || 1);
     }
 
     // Buat kode room 6 karakter
@@ -118,19 +121,21 @@
 
     // Mendapatkan daftar pemain yang saat ini terhubung
     getPlayerList() {
+      const hNum = this.hostPlayerNum || 1;
       if (this.isHost) {
         const list = [{
           playerNum: 1,
-          isHost: true,
-          name: this.playerName || 'Host',
+          isHost: (hNum === 1),
+          name: this.playerName || (hNum === 1 ? 'Host' : 'Pemain 1'),
           isReady: true
         }];
         for (const info of this.connections.values()) {
+          const isTargetHost = (info.playerNum === hNum);
           list.push({
             playerNum: info.playerNum,
-            isHost: false,
+            isHost: isTargetHost,
             name: info.name || `Pemain ${info.playerNum}`,
-            isReady: Boolean(info.isReady)
+            isReady: isTargetHost ? true : Boolean(info.isReady)
           });
         }
         list.sort((a, b) => a.playerNum - b.playerNum);
@@ -140,10 +145,86 @@
         ? this._lastPlayerList
         : [{
             playerNum: this.playerNum,
-            isHost: false,
+            isHost: (this.playerNum === hNum),
             name: this.playerName || `Pemain ${this.playerNum}`,
             isReady: this.isReady
           }];
+    }
+
+    // Mengeluarkan pemain (Kick Player)
+    kickPlayer(targetPlayerNum) {
+      const targetNum = parseInt(targetPlayerNum, 10);
+      if (!targetNum || targetNum === 1) return; // Pemilik room awal (network relay) tidak bisa di-kick
+
+      if (this.isHost) {
+        // Network Host mengeksekusi kick langsung
+        for (const [peerId, info] of this.connections) {
+          if (info.playerNum === targetNum) {
+            console.log(`[MP Host] Mengeluarkan Pemain ${targetNum} (${info.name}) dari room.`);
+            try {
+              info.conn.send({
+                type: 'kicked',
+                reason: 'Kamu telah dikeluarkan dari room oleh Host.'
+              });
+              setTimeout(() => {
+                try { info.conn.close(); } catch (_) {}
+              }, 120);
+            } catch (_) {}
+
+            this.connections.delete(peerId);
+            this.isConnected = this.connections.size > 0;
+            const currentPlayers = this.getPlayerList();
+            this.broadcast({ type: 'player-update', players: currentPlayers });
+            if (this.callbacks.onPlayerListUpdate) {
+              this.callbacks.onPlayerListUpdate(currentPlayers, this.maxPlayers);
+            }
+            if (this.callbacks.onMessage) {
+              this.callbacks.onMessage({
+                type: 'player-kicked-notice',
+                playerNum: targetNum,
+                name: info.name
+              });
+            }
+            break;
+          }
+        }
+      } else {
+        // Promoted Host mengirim request kick ke network host
+        this.send({
+          type: 'request-kick',
+          targetPlayerNum: targetNum
+        });
+      }
+    }
+
+    // Memindahkan status Host ke pemain lain
+    transferHost(targetPlayerNum) {
+      const targetNum = parseInt(targetPlayerNum, 10);
+      if (!targetNum || targetNum === this.hostPlayerNum) return;
+
+      if (this.isHost) {
+        this.hostPlayerNum = targetNum;
+        const currentPlayers = this.getPlayerList();
+        this.broadcast({
+          type: 'host-transferred',
+          newHostPlayerNum: targetNum,
+          players: currentPlayers
+        });
+        if (this.callbacks.onPlayerListUpdate) {
+          this.callbacks.onPlayerListUpdate(currentPlayers, this.maxPlayers);
+        }
+        if (this.callbacks.onMessage) {
+          this.callbacks.onMessage({
+            type: 'host-transferred',
+            newHostPlayerNum: targetNum
+          });
+        }
+      } else {
+        this.send({
+          type: 'request-transfer-host',
+          targetPlayerNum: targetNum
+        });
+      }
     }
 
     // Broadcast pesan ke seluruh guest terhubung (khusus Host)
@@ -271,6 +352,7 @@
                 playerNum: assignedNum,
                 maxPlayers: this.maxPlayers,
                 players: currentPlayers,
+                hostPlayerNum: this.hostPlayerNum,
                 isGameInProgress: this.isGameInProgress
               });
             } catch (_) {}
@@ -325,6 +407,30 @@
                 if (this.callbacks.onPlayerListUpdate) {
                   this.callbacks.onPlayerListUpdate(currentPlayers, this.maxPlayers);
                 }
+              }
+              return;
+            }
+
+            // Request kick dari Promoted Host
+            if (data.type === 'request-kick') {
+              if (assignedNum === this.hostPlayerNum) {
+                this.kickPlayer(data.targetPlayerNum);
+              }
+              return;
+            }
+
+            // Request transfer host dari Promoted Host
+            if (data.type === 'request-transfer-host') {
+              if (assignedNum === this.hostPlayerNum) {
+                this.transferHost(data.targetPlayerNum);
+              }
+              return;
+            }
+
+            // Request start game dari Promoted Host
+            if (data.type === 'request-start-game') {
+              if (assignedNum === this.hostPlayerNum && this.callbacks.onMessage) {
+                this.callbacks.onMessage({ type: 'request-start-game' });
               }
               return;
             }
@@ -534,6 +640,7 @@
           this.isConnected = true;
           this.playerNum = data.playerNum || 2;
           this.maxPlayers = data.maxPlayers || 2;
+          this.hostPlayerNum = data.hostPlayerNum || 1;
           this._lastPlayerList = data.players || [];
           this._startHeartbeat();
 
@@ -550,6 +657,30 @@
           }
           if (this.callbacks.onPlayerListUpdate) {
             this.callbacks.onPlayerListUpdate(this._lastPlayerList, this.maxPlayers);
+          }
+          return;
+        }
+
+        // Dikeluarkan oleh Host (Kicked)
+        if (data.type === 'kicked') {
+          console.warn('[MP] Dikeluarkan dari room oleh Host:', data.reason);
+          this.disconnect();
+          if (this.callbacks.onMessage) {
+            this.callbacks.onMessage(data);
+          }
+          return;
+        }
+
+        // Pemindahan status Host (Host Transferred)
+        if (data.type === 'host-transferred') {
+          console.log(`[MP] Status Host dipindahkan ke Pemain ${data.newHostPlayerNum}`);
+          this.hostPlayerNum = data.newHostPlayerNum;
+          if (data.players) this._lastPlayerList = data.players;
+          if (this.callbacks.onPlayerListUpdate) {
+            this.callbacks.onPlayerListUpdate(this._lastPlayerList, this.maxPlayers);
+          }
+          if (this.callbacks.onMessage) {
+            this.callbacks.onMessage(data);
           }
           return;
         }

@@ -1,5 +1,5 @@
 // sw.js - Service Worker untuk SilangKata PWA
-const CACHE_NAME = 'silangkata-v15';
+const CACHE_NAME = 'silangkata-v16';
 
 const STATIC_ASSETS = [
   '/',

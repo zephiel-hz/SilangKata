@@ -179,6 +179,19 @@ async function run() {
   }
   console.log('✓ Multi-Provider AI (Groq, OpenRouter, DeepSeek, Gemini, Offline Fallback) terverifikasi.');
 
+  console.log('8. Menguji Fitur Transfer Host & Kick Player...');
+  if (!mpCode.includes('kickPlayer(') || !mpCode.includes('transferHost(') || !mpCode.includes('isCurrentHost(')) {
+    throw new Error('Host management methods missing in multiplayer.js');
+  }
+  if (!appCode.includes('confirmTransferHost') || !appCode.includes('confirmKickPlayer')) {
+    throw new Error('Host confirmation dialogs missing in app.js');
+  }
+  const cssCode = fs.readFileSync('styles.css', 'utf8');
+  if (!cssCode.includes('.btn-kick') || !cssCode.includes('.btn-transfer')) {
+    throw new Error('Slot action styles missing in styles.css');
+  }
+  console.log('✓ Fitur Transfer Host & Kick Player (multiplayer logic, dialogs, styling) terverifikasi.');
+
   console.log('\nSEMUA TEST LOLOS 100%!');
 }
 
