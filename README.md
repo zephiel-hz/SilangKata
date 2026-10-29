@@ -16,9 +16,10 @@
   - **Asymmetric Clues**: Host bertugas mengisi kata **Mendatar (Across)**, sedangkan Guest bertugas mengisi kata **Menurun (Down)**.
   - Setiap pemain hanya melihat petunjuk miliknya sendiri secara penuh — memaksa komunikasi aktif dan kolaborasi!
   - Sinkronisasi huruf real-time (<200ms) dengan pembeda warna (Sky Blue untuk input sendiri, Rose untuk input partner).
-- **Generator Kata Otomatis (Google Gemini AI)**:
-  - Generate puzzle baru setiap ronde via Vercel Serverless Function (`gemini-1.5-flash`).
-  - Dilengkapi sistem cache in-memory 10 menit dan kamus fallback Bahasa Indonesia lokal jika API key belum disetel atau limit tercapai.
+  - Setelah ronde selesai, semua pemain dapat memilih **Main Lagi**; room kembali ke pengaturan setelah seluruh pemain terhubung menyetujui.
+- **Generator Kata Otomatis (Multi-Provider AI)**:
+  - Generate puzzle baru setiap ronde via Vercel Serverless Function dengan provider AI yang tersedia.
+  - Riwayat hingga 80 jawaban dan petunjuk terbaru disimpan lokal per tema untuk mengurangi pengulangan; jika AI tidak tersedia, aplikasi memberi tahu saat memakai kamus fallback.
 - **Client-Side Crossword Grid Engine**:
   - Algoritma penyusunan grid dinamis dan acak di browser tanpa kompilasi/bundler, menjamin bentuk yang selalu bervariasi setiap ronde.
 - **PWA & Offline-First**:
@@ -33,39 +34,20 @@
 
 ## 📸 Preview Antarmuka
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                       SILANG ✚ KATA                         │
-│               "Teka-teki silang kolaboratif"                │
-│                                                             │
-│       [ 🎯 MAIN SOLO ]           [ 👥 CO-OP 2 PEMAIN ]      │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│ TIMER: 04:32        PERAN: MENDATAR (HOST)        SKOR: 400 │
-├──────────────────────────────┬──────────────────────────────┤
-│                              │ 📘 MENDATAR (Cyan)           │
-│   [K][U][C][I][N][G]         │ 1. Hewan berkaki empat suka..│
-│      [E]                     │ 4. Makanan fermentasi...     │
-│   [K][A][M][B][I][N][G]      ├──────────────────────────────┤
-│      [I]                     │ 📕 MENURUN (Pink - Dimmed)   │
-│      [N]                     │ (Diisi oleh partnermu)       │
-│      [C]                     │                              │
-│      [I]                     │                              │
-└──────────────────────────────┴──────────────────────────────┘
-```
+Menu utama menampilkan pengaturan tema, jumlah pertanyaan, dan tingkat kesulitan di samping pilihan mode solo atau co-op. Lobby dan room menyediakan alur membuat atau bergabung ke permainan; papan teka-teki tetap menjadi fokus saat bermain.
 
 ---
 
 ## 🎮 Cara Bermain
 
 ### Mode Solo (3 Langkah)
-1. Pilih tema dan jumlah pertanyaan di menu utama, lalu klik **"🎯 MAIN SOLO"**.
+1. Pilih tema, jumlah pertanyaan, dan tingkat kesulitan di menu utama, lalu pilih **Main solo**.
 2. Klik kotak atau petunjuk untuk mengarahkan kursor; ketik huruf untuk mengisi kata.
 3. Tuntaskan seluruh kata untuk mendapatkan **100 poin per kata** ditambah **300 poin bonus tuntas**, dan lihat catatan waktu stopwatch terbaikmu!
 
 ### Mode Co-op (5 Langkah)
-1. **Pemain 1 (Host)**: Klik **"👥 CO-OP 2 PEMAIN"** → Klik **"➕ BUAT ROOM BARU"** → Salin kode room 6 karakter (misal: `ABC123`).
-2. **Pemain 2 (Guest)**: Buka SilangKata di perangkat/browser lain → Klik **"👥 CO-OP 2 PEMAIN"** → Masukkan kode room → Klik **"🚀 GABUNG ROOM"**.
+1. **Pemain 1 (Host)**: Pilih **Main co-op** → **Buat room baru** → Salin kode room (misal: `ABC123`).
+2. **Pemain 2 (Guest)**: Buka SilangKata di perangkat/browser lain → Pilih **Main co-op** → Masukkan kode room → **Gabung room**.
 3. Saat terhubung, game otomatis dimulai:
    - Host memegang peran **Mendatar** (hanya melihat petunjuk mendatar).
    - Guest memegang peran **Menurun** (hanya melihat petunjuk menurun).
@@ -94,12 +76,15 @@
 
 3. Jalankan server lokal:
    ```bash
-   # Opsi A: Menggunakan Vercel CLI (jika ingin menguji serverless function)
-   npm install -g vercel
-   vercel dev
+   # Menjalankan aplikasi dan API /api/generate-puzzle
+   npm start
+   ```
 
-   # Opsi B: Menggunakan static server sederhana
-   npx serve .
+   `npm start` menjalankan Vercel CLI lokal agar fungsi API dan `.env.local` dapat digunakan. Jika Vercel CLI belum tersedia, `npx` akan meminta izin untuk mengunduhnya.
+
+   Untuk melihat UI tanpa API (soal terbatas dari fallback lokal):
+   ```bash
+   npm run start:static
    ```
 
 4. Buka di browser: `http://localhost:3000` (atau port yang ditampilkan).
@@ -198,4 +183,3 @@ silangkata/
 ## 📜 Lisensi
 MIT License © SilangKata Team.
 Made with 💙 in Indonesia.
-

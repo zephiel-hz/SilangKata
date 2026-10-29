@@ -48,6 +48,7 @@
       this.playerName = 'Pemain';
       this.isReady = false;
       this.hostPlayerNum = 1;
+      this.roomSettings = null;
       this.isGameInProgress = false;
       this.connections = new Map(); // Untuk Host: peerId -> { conn, playerNum, name, isReady }
       this.guestConn = null; // Untuk Guest: data channel ke Host
@@ -90,7 +91,13 @@
 
     setReady(isReady) {
       this.isReady = Boolean(isReady);
-      if (!this.isHost) {
+      if (this.isHost) {
+        const currentPlayers = this.getPlayerList();
+        this.broadcast({ type: 'player-update', players: currentPlayers });
+        if (this.callbacks.onPlayerListUpdate) {
+          this.callbacks.onPlayerListUpdate(currentPlayers, this.maxPlayers);
+        }
+      } else {
         this.send({
           type: 'ready-toggle',
           isReady: this.isReady
@@ -127,7 +134,7 @@
           playerNum: 1,
           isHost: (hNum === 1),
           name: this.playerName || (hNum === 1 ? 'Host' : 'Pemain 1'),
-          isReady: true
+          isReady: hNum === 1 ? true : Boolean(this.isReady)
         }];
         for (const info of this.connections.values()) {
           const isTargetHost = (info.playerNum === hNum);
@@ -149,6 +156,20 @@
             name: this.playerName || `Pemain ${this.playerNum}`,
             isReady: this.isReady
           }];
+    }
+
+    resetReadyStates() {
+      this.isReady = false;
+      if (!this.isHost) return;
+
+      for (const info of this.connections.values()) {
+        info.isReady = false;
+      }
+      const currentPlayers = this.getPlayerList();
+      this.broadcast({ type: 'player-update', players: currentPlayers });
+      if (this.callbacks.onPlayerListUpdate) {
+        this.callbacks.onPlayerListUpdate(currentPlayers, this.maxPlayers);
+      }
     }
 
     // Mengeluarkan pemain (Kick Player)
@@ -353,7 +374,8 @@
                 maxPlayers: this.maxPlayers,
                 players: currentPlayers,
                 hostPlayerNum: this.hostPlayerNum,
-                isGameInProgress: this.isGameInProgress
+                isGameInProgress: this.isGameInProgress,
+                roomSettings: this.roomSettings || null
               });
             } catch (_) {}
 
@@ -392,6 +414,11 @@
                 // Jika game sudah berjalan, picu onMidGameJoin agar Host kirim syncGameState
                 if (this.isGameInProgress && this.callbacks.onMidGameJoin) {
                   this.callbacks.onMidGameJoin(connection, assignedNum, info.name);
+                  this.broadcast({
+                    type: 'player-reconnected',
+                    playerNum: assignedNum,
+                    name: info.name
+                  });
                 }
               }
               return;
@@ -408,6 +435,14 @@
                   this.callbacks.onPlayerListUpdate(currentPlayers, this.maxPlayers);
                 }
               }
+              return;
+            }
+
+            if (data.type === 'play-again-vote') {
+              if (this.callbacks.onMessage) {
+                this.callbacks.onMessage({ ...data, playerNum: assignedNum });
+              }
+              this.broadcast({ ...data, playerNum: assignedNum }, connection.peer);
               return;
             }
 
@@ -433,6 +468,13 @@
                 this.callbacks.onMessage({ type: 'request-start-game' });
               }
               return;
+            }
+
+            // Update room settings dari Promoted Host
+            if (data.type === 'room-settings-update') {
+              if (assignedNum === this.hostPlayerNum) {
+                this.roomSettings = data;
+              }
             }
 
             // Pastikan pesan membawa playerNum pengirim asli
@@ -463,6 +505,12 @@
               this.broadcast({
                 type: 'player-update',
                 players: currentPlayers
+              });
+
+              this.broadcast({
+                type: 'player-disconnected',
+                playerNum: assignedNum,
+                name: leavingName
               });
 
               if (this.callbacks.onMessage) {
@@ -830,6 +878,7 @@
 
       this.isHost = false;
       this.playerNum = 1;
+      this.hostPlayerNum = 1;
       this.maxPlayers = 2;
       this.roomCode = null;
       this._lastPlayerList = [];

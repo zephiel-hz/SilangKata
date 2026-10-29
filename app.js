@@ -543,6 +543,9 @@
     ]
   };
 
+  const PUZZLE_HISTORY_KEY = 'silangkata_puzzle_history';
+  const PUZZLE_HISTORY_LIMIT = 80;
+
   // ==========================================
   // 3. GAME CONTROLLER & STATE
   // ==========================================
@@ -554,6 +557,7 @@
       this.puzzle = null;
       this.userGrid = {}; // 'r-c' => letter
       this.cellSources = {}; // 'r-c' => 'self' | 'partner'
+      this.hintedCells = {}; // 'r-c' => true for letters revealed by a hint
       this.activeCell = null; // { r, c }
       this.activeDir = 'across'; // 'across' | 'down'
       this.score = 0;
@@ -570,6 +574,10 @@
       this.hintsUsedCount = 0;
       this.completionBonus = 0;
       this.coopScores = new Map(); // playerNum => { playerNum, name, score, wordsSolved, hintsUsed }
+      this.isStartingCoopGame = false;
+      this.playAgainVotes = new Set();
+      this.hasVotedPlayAgain = false;
+      this.playAgainTransitionStarted = false;
 
       // Profil nama pemain
       this.playerName = (typeof localStorage !== 'undefined') ? (localStorage.getItem('silangkata_player_name') || '') : '';
@@ -615,6 +623,20 @@
       this.btnCancelRoom = document.getElementById('btn-cancel-room');
       this.badgeHostStatus = document.getElementById('badge-host-status');
       this.badgeGuestStatus = document.getElementById('badge-guest-status');
+
+      // Room Settings Elements
+      this.roomSettingsCard = document.getElementById('room-settings-card');
+      this.roomSettingsSummary = document.getElementById('room-settings-summary');
+      this.btnEditRoomSettings = document.getElementById('btn-edit-room-settings');
+      this.modalRoomSettingsOverlay = document.getElementById('modal-room-settings-overlay');
+      this.roomThemeSelect = document.getElementById('room-theme-select');
+      this.roomCountSelect = document.getElementById('room-count-select');
+      this.roomDiffSelect = document.getElementById('room-diff-select');
+      this.btnRoomSettingsSave = document.getElementById('btn-room-settings-save');
+      this.btnRoomSettingsCancel = document.getElementById('btn-room-settings-cancel');
+
+      // Player Identity in HUD
+      this.hudPlayerIdentity = document.getElementById('hud-player-identity');
 
       // Game HUD Elements
       this.hudTimer = document.getElementById('hud-timer');
@@ -665,7 +687,8 @@
       this.bdTotalPts = document.getElementById('bd-total-pts');
       this.resultCoopLeaderboard = document.getElementById('result-coop-leaderboard');
       this.resultLeaderboardList = document.getElementById('result-leaderboard-list');
-      this.btnNextPuzzle = document.getElementById('btn-next-puzzle');
+      this.btnPlayAgain = document.getElementById('btn-play-again');
+      this.playAgainStatus = document.getElementById('play-again-status');
       this.btnShareResult = document.getElementById('btn-share-result');
       this.btnResultMenu = document.getElementById('btn-result-menu');
 
@@ -687,6 +710,7 @@
       this.loadingText = document.getElementById('loading-text');
       this.disconnectOverlay = document.getElementById('disconnect-overlay');
       this.btnDisconnectMenu = document.getElementById('btn-disconnect-menu');
+      this.btnDisconnectRejoin = document.getElementById('btn-disconnect-rejoin');
       this.modalConnError = document.getElementById('modal-conn-error');
       this.modalErrorTitle = document.getElementById('modal-error-title');
       this.modalErrorCode = document.getElementById('modal-error-code');
@@ -732,10 +756,19 @@
         this.showScreen('screen-lobby');
       });
 
+      // Room Settings (Edit Mode)
+      this.btnEditRoomSettings?.addEventListener('click', () => this.openRoomSettingsModal());
+      this.btnRoomSettingsSave?.addEventListener('click', () => this.saveRoomSettings());
+      this.btnRoomSettingsCancel?.addEventListener('click', () => this.closeRoomSettingsModal());
+
       // Game HUD
       this.btnAudioToggle.addEventListener('click', () => {
         const isSoundOn = sound.toggleMute();
-        this.btnAudioToggle.textContent = isSoundOn ? '🔊' : '🔇';
+        const iconName = isSoundOn ? 'volume-2' : 'volume-x';
+        this.btnAudioToggle.innerHTML = `<i data-lucide="${iconName}" aria-hidden="true"></i>`;
+        this.btnAudioToggle.title = isSoundOn ? 'Matikan suara' : 'Aktifkan suara';
+        this.btnAudioToggle.setAttribute('aria-label', this.btnAudioToggle.title);
+        if (window.lucide) window.lucide.createIcons();
         this.showToast(isSoundOn ? 'Suara Aktif' : 'Suara Dimatikan');
       });
 
@@ -752,22 +785,28 @@
       });
 
       // Result
-      this.btnNextPuzzle.addEventListener('click', () => {
-        if (this.mode === 'coop') {
-          this.showToast('Kembali ke lobby untuk room berikutnya');
-          this.showScreen('screen-lobby');
-        } else {
-          this.startSoloGame();
-        }
-      });
+      this.btnPlayAgain.addEventListener('click', () => this.voteToPlayAgain());
       this.btnShareResult.addEventListener('click', () => this.shareResult());
-      this.btnResultMenu.addEventListener('click', () => this.showScreen('screen-menu'));
+      this.btnResultMenu.addEventListener('click', () => {
+        this.endGameCleanup();
+        this.showScreen('screen-menu');
+      });
 
       // Disconnect overlay
       this.btnDisconnectMenu.addEventListener('click', () => {
         this.disconnectOverlay.classList.remove('active');
         this.endGameCleanup();
         this.showScreen('screen-menu');
+      });
+      this.btnDisconnectRejoin?.addEventListener('click', () => {
+        const roomCode = this.displayRoomCode?.textContent?.trim();
+        this.disconnectOverlay.classList.remove('active');
+        if (roomCode && /^[A-Z0-9]{6}$/.test(roomCode)) {
+          this.joinRoomByCode(roomCode);
+        } else {
+          this.showToast('Kode room tidak tersedia. Kembali ke lobby untuk bergabung lagi.');
+          this.showScreen('screen-lobby');
+        }
       });
 
       // Keyboard input (Physical / Desktop)
@@ -794,6 +833,7 @@
         this.virtualKeyboardInput.addEventListener('keydown', (e) => {
           if (e.key === 'Backspace') {
             e.preventDefault();
+            e.stopPropagation();
             this.handleBackspace();
           }
         });
@@ -889,11 +929,14 @@
         this.puzzle = {
           ...generatedGrid,
           theme: puzzleData.theme || 'Acak',
-          difficulty: puzzleData.difficulty || 'medium'
+          difficulty: puzzleData.difficulty || 'medium',
+          source: puzzleData.source
         };
+        this.rememberPuzzleWords(this.selectedTheme || 'campuran', generatedGrid.words);
 
         this.hideLoading();
         this.initGameBoard();
+        this.notifyIfFallback(puzzleData);
       } catch (err) {
         console.error('Error startSoloGame:', err);
         this.hideLoading();
@@ -992,11 +1035,11 @@
       if (this.btnReadyCoop) {
         if (nextState) {
           this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action is-ready';
-          this.btnReadyCoop.innerHTML = '<span>⏳</span> BATALKAN SIAP';
+          this.btnReadyCoop.textContent = 'Batalkan siap';
           this.showToast('Kamu berstatus SIAP! Menunggu Host memulai permainan.');
         } else {
           this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action';
-          this.btnReadyCoop.innerHTML = '<span>✅</span> SAYA SIAP BERMAIN';
+          this.btnReadyCoop.textContent = 'Saya siap bermain';
           this.showToast('Status siap dibatalkan.');
         }
       }
@@ -1033,8 +1076,9 @@
         nameEl.textContent = (player.playerNum === myNum) ? `👤 ${player.name} (Kamu)` : `👥 ${player.name}`;
 
         const metaEl = document.createElement('span');
-        metaEl.className = 'leaderboard-meta';
-        metaEl.textContent = `${player.wordsSolved || 0} Kata terjawab • ${player.hintsUsed || 0} Petunjuk`;
+        metaEl.className = `leaderboard-meta ${player.connected === false ? 'player-offline' : ''}`;
+        const presence = player.connected === false ? ' • ⚫ Terputus' : '';
+        metaEl.textContent = `${player.wordsSolved || 0} Kata terjawab • ${player.hintsUsed || 0} Petunjuk${presence}`;
 
         nameBoxEl.appendChild(nameEl);
         nameBoxEl.appendChild(metaEl);
@@ -1104,6 +1148,72 @@
       }
     }
 
+    // ==========================================
+    // 4b. ROOM SETTINGS (EDIT MODE)
+    // ==========================================
+    _themeLabel(val) {
+      const m = { '': 'Campuran', umum: 'Umum', ipa: 'IPA', ips: 'IPS', hewan: 'Hewan', buah: 'Buah', makanan: 'Makanan', transportasi: 'Transport', teknologi: 'Teknologi', olahraga: 'Olahraga' };
+      return m[val] || 'Campuran';
+    }
+    _diffLabel(val) {
+      const m = { easy: 'Mudah', medium: 'Sedang', hard: 'Sulit' };
+      return m[val] || 'Sedang';
+    }
+
+    updateRoomSettingsDisplay() {
+      if (!this.roomSettingsSummary) return;
+      this.roomSettingsSummary.innerHTML = '';
+      const tags = [
+        `🏷️ ${this._themeLabel(this.selectedTheme)}`,
+        `📝 ${this.selectedCount} Soal`,
+        `⚡ ${this._diffLabel(this.selectedDiff)}`
+      ];
+      tags.forEach(t => {
+        const span = document.createElement('span');
+        span.className = 'setting-tag';
+        span.textContent = t;
+        this.roomSettingsSummary.appendChild(span);
+      });
+
+      // Tombol edit hanya tampil jika saya host
+      const currentHostNum = window.MP ? (window.MP.hostPlayerNum || 1) : 1;
+      const myNum = window.MP ? window.MP.playerNum : 1;
+      if (this.btnEditRoomSettings) {
+        this.btnEditRoomSettings.style.display = (myNum === currentHostNum) ? 'inline-block' : 'none';
+      }
+    }
+
+    openRoomSettingsModal() {
+      if (!this.modalRoomSettingsOverlay) return;
+      if (this.roomThemeSelect) this.roomThemeSelect.value = this.selectedTheme;
+      if (this.roomCountSelect) this.roomCountSelect.value = this.selectedCount;
+      if (this.roomDiffSelect) this.roomDiffSelect.value = this.selectedDiff;
+      this.modalRoomSettingsOverlay.classList.add('active');
+    }
+
+    closeRoomSettingsModal() {
+      if (this.modalRoomSettingsOverlay) this.modalRoomSettingsOverlay.classList.remove('active');
+    }
+
+    saveRoomSettings() {
+      this.selectedTheme = this.roomThemeSelect ? this.roomThemeSelect.value : '';
+      this.selectedCount = parseInt(this.roomCountSelect?.value, 10) || 12;
+      this.selectedDiff = this.roomDiffSelect ? this.roomDiffSelect.value : 'medium';
+      this.updateRoomSettingsDisplay();
+      this.closeRoomSettingsModal();
+      this.showToast('✅ Pengaturan room diperbarui!');
+
+      // Broadcast ke semua pemain
+      if (window.MP) {
+        window.MP.send({
+          type: 'room-settings-update',
+          theme: this.selectedTheme,
+          count: this.selectedCount,
+          diff: this.selectedDiff
+        });
+      }
+    }
+
     showLiveLeaderboardModal() {
       if (!this.modalLiveLeaderboard) return;
       this.renderLeaderboardList(this.liveLeaderboardList);
@@ -1139,6 +1249,7 @@
 
         // Inisialisasi visual slot pemain di layar room
         this.renderRoomPlayerSlots([{ playerNum: 1, isHost: true, name: this.playerName, isReady: true }], maxPlayers, true);
+        this.updateRoomSettingsDisplay();
         this.showScreen('screen-room');
 
         window.MP.initHost(
@@ -1180,8 +1291,13 @@
                 name: guestName || `Pemain ${assignedNum}`,
                 score: 0,
                 wordsSolved: 0,
-                hintsUsed: 0
+                hintsUsed: 0,
+                connected: true
               });
+            } else {
+              const playerInfo = this.coopScores.get(assignedNum);
+              playerInfo.name = guestName || playerInfo.name;
+              playerInfo.connected = true;
             }
 
             try {
@@ -1190,6 +1306,7 @@
                 puzzle: this.puzzle,
                 userGrid: this.userGrid,
                 cellSources: this.cellSources,
+                hintedCells: this.hintedCells,
                 elapsedSeconds: this.elapsedSeconds,
                 leaderboard: Array.from(this.coopScores.entries()),
                 playerNum: assignedNum
@@ -1304,14 +1421,14 @@
           this.btnStartCoop.style.display = 'block';
           if (guests.length === 0) {
             this.btnStartCoop.disabled = true;
-            this.btnStartCoop.innerHTML = `<span>⏳</span> MENUNGGU TEMAN GABUNG (1/${maxPlayers})`;
+            this.btnStartCoop.textContent = `Menunggu teman bergabung (1/${maxPlayers})`;
           } else if (!allGuestsReady) {
             const readyCount = guests.filter(p => p.isReady).length;
             this.btnStartCoop.disabled = true;
-            this.btnStartCoop.innerHTML = `<span>⏳</span> MENUNGGU SEMUA SIAP (${readyCount}/${guests.length} Siap)`;
+            this.btnStartCoop.textContent = `Menunggu semua siap (${readyCount}/${guests.length} siap)`;
           } else {
             this.btnStartCoop.disabled = false;
-            this.btnStartCoop.innerHTML = `<span>🚀</span> MULAI PERMAINAN SEKARANG (${players.length}/${maxPlayers})`;
+            this.btnStartCoop.textContent = `Mulai permainan sekarang (${players.length}/${maxPlayers})`;
           }
         } else {
           this.btnStartCoop.style.display = 'none';
@@ -1326,18 +1443,23 @@
           const isMyReady = myData ? myData.isReady : (window.MP ? window.MP.isReady : false);
           if (isMyReady) {
             this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action is-ready';
-            this.btnReadyCoop.innerHTML = '<span>⏳</span> BATALKAN SIAP';
+            this.btnReadyCoop.textContent = 'Batalkan siap';
           } else {
             this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action';
-            this.btnReadyCoop.innerHTML = '<span>✅</span> SAYA SIAP BERMAIN';
+            this.btnReadyCoop.textContent = 'Saya siap bermain';
           }
         } else {
           this.btnReadyCoop.style.display = 'none';
         }
       }
+
+      this.updateRoomSettingsDisplay();
     }
 
     async handleHostStartGame() {
+      if (this.isStartingCoopGame ||
+          (this.screenGame?.classList.contains('active') && !this.isGameOver)) return;
+
       const players = window.MP ? window.MP.getPlayerList() : [];
       if (players.length < 2) {
         this.showToast('Tunggu minimal 1 pemain lain bergabung!');
@@ -1353,48 +1475,138 @@
         return;
       }
 
-      // Jika pemain ini adalah Host ruangan tetapi bukan Host jaringan (Network Host/Peer P1)
-      if (window.MP && !window.MP.isHost) {
-        window.MP.send({ type: 'request-start-game' });
-        this.showLoading('Meminta room memulai permainan...');
+      this.isStartingCoopGame = true;
+      if (this.btnPlayAgain) this.btnPlayAgain.disabled = true;
+      try {
+        // Jika pemain ini adalah Host ruangan tetapi bukan Host jaringan (Network Host/Peer P1)
+        if (window.MP && !window.MP.isHost) {
+          window.MP.send({ type: 'request-start-game' });
+          this.showLoading('Meminta room memulai permainan...');
+          return;
+        }
+
+        this.showLoading('Menyiapkan puzzle kolaboratif...');
+        const puzzleData = await this.fetchPuzzle(this.selectedTheme, this.selectedDiff, this.selectedCount);
+        const generatedGrid = CrosswordGenerator.generate(puzzleData.words);
+
+        this.puzzle = {
+          ...generatedGrid,
+          theme: puzzleData.theme || 'Acak',
+          difficulty: puzzleData.difficulty || 'medium',
+          source: puzzleData.source
+        };
+        this.rememberPuzzleWords(this.selectedTheme || 'campuran', generatedGrid.words);
+
+        if (window.MP) {
+          window.MP.isGameInProgress = true;
+        }
+
+        // Inisialisasi coopScores
+        this.coopScores.clear();
+        players.forEach(p => {
+          this.coopScores.set(p.playerNum, {
+            playerNum: p.playerNum,
+            name: p.name || `Pemain ${p.playerNum}`,
+            score: 0,
+            wordsSolved: 0,
+            hintsUsed: 0,
+            connected: true
+          });
+        });
+
+        // Kirim puzzle baru ke room yang sama untuk memulai ronde dari awal.
+        window.MP.send({
+          type: 'init',
+          puzzle: this.puzzle,
+          players: players
+        });
+
+        this.hideLoading();
+        this.initGameBoard();
+        this.notifyIfFallback(puzzleData);
+      } catch (err) {
+        console.error('Gagal memulai ronde co-op baru:', err);
+        if (window.MP) {
+          window.MP.isGameInProgress = false;
+        }
+        this.hideLoading();
+        this.showToast('Gagal menyiapkan ronde baru. Coba lagi.');
+      } finally {
+        this.isStartingCoopGame = false;
+        if (this.btnPlayAgain) this.btnPlayAgain.disabled = false;
+      }
+    }
+
+    voteToPlayAgain() {
+      if (this.mode !== 'coop' || !window.MP || this.hasVotedPlayAgain || this.playAgainTransitionStarted) return;
+      if (!window.MP.isConnected) {
+        this.showToast('Koneksi room terputus. Tidak dapat meminta main lagi.');
         return;
       }
 
-      this.showLoading('Menyiapkan puzzle kolaboratif...');
-      const puzzleData = await this.fetchPuzzle(this.selectedTheme, this.selectedDiff, this.selectedCount);
-      const generatedGrid = CrosswordGenerator.generate(puzzleData.words);
+      this.hasVotedPlayAgain = true;
+      const myNum = window.MP.playerNum;
+      this.playAgainVotes.add(myNum);
+      this.updatePlayAgainStatus();
+      if (this.btnPlayAgain) this.btnPlayAgain.disabled = true;
 
-      this.puzzle = {
-        ...generatedGrid,
-        theme: puzzleData.theme || 'Acak',
-        difficulty: puzzleData.difficulty || 'medium'
-      };
-
-      if (window.MP) {
-        window.MP.isGameInProgress = true;
+      if (window.MP.isHost) {
+        this.registerPlayAgainVote(myNum);
+      } else {
+        window.MP.send({ type: 'play-again-vote' });
       }
+    }
 
-      // Inisialisasi coopScores
-      this.coopScores.clear();
-      players.forEach(p => {
-        this.coopScores.set(p.playerNum, {
-          playerNum: p.playerNum,
-          name: p.name || `Pemain ${p.playerNum}`,
-          score: 0,
-          wordsSolved: 0,
-          hintsUsed: 0
-        });
-      });
+    updatePlayAgainStatus(votes = this.playAgainVotes) {
+      const players = window.MP ? window.MP.getPlayerList() : [];
+      const connectedPlayerNums = new Set(players.map(player => player.playerNum));
+      this.playAgainVotes = new Set([...votes].filter(playerNum => connectedPlayerNums.has(playerNum)));
+      const total = players.length;
+      const count = this.playAgainVotes.size;
+      if (this.playAgainStatus) {
+        this.playAgainStatus.textContent = `${count}/${total} orang ingin main lagi!`;
+        this.playAgainStatus.style.display = this.mode === 'coop' ? 'block' : 'none';
+      }
+      if (this.btnPlayAgain) {
+        this.btnPlayAgain.disabled = this.hasVotedPlayAgain || this.playAgainTransitionStarted;
+      }
+    }
 
-      // Kirim puzzle utuh ke seluruh guest terhubung
-      window.MP.send({
-        type: 'init',
-        puzzle: this.puzzle,
-        players: players
-      });
+    registerPlayAgainVote(playerNum) {
+      if (!window.MP?.isHost || this.playAgainTransitionStarted) return;
+      const connectedPlayerNums = new Set(window.MP.getPlayerList().map(player => player.playerNum));
+      if (!connectedPlayerNums.has(playerNum)) return;
 
-      this.hideLoading();
-      this.initGameBoard();
+      this.playAgainVotes.add(playerNum);
+      this.updatePlayAgainStatus();
+      const votes = [...this.playAgainVotes];
+      window.MP.send({ type: 'play-again-status', votes });
+
+      if (votes.length === connectedPlayerNums.size) {
+        this.playAgainTransitionStarted = true;
+        window.MP.resetReadyStates();
+        window.MP.isGameInProgress = false;
+        window.MP.send({ type: 'play-again-approved' });
+        this.enterRoomAfterPlayAgain();
+      }
+    }
+
+    enterRoomAfterPlayAgain() {
+      if (this.playAgainTransitionStarted && this.screenRoom?.classList.contains('active')) return;
+      this.playAgainTransitionStarted = true;
+      this.isGameOver = true;
+      this.stopTimer();
+      this.hasVotedPlayAgain = false;
+      this.playAgainVotes.clear();
+      if (this.btnPlayAgain) this.btnPlayAgain.disabled = false;
+      if (this.playAgainStatus) this.playAgainStatus.style.display = 'none';
+      if (window.MP) window.MP.isGameInProgress = false;
+      this.renderRoomPlayerSlots(
+        window.MP ? window.MP.getPlayerList() : [],
+        window.MP ? window.MP.maxPlayers : 2,
+        window.MP?.isCurrentHost()
+      );
+      this.showScreen('screen-room');
     }
 
     handleJoinRoom() {
@@ -1432,6 +1644,12 @@
           this.displayRoomCode.textContent = cleanCode;
           if (this.btnShareLink) this.btnShareLink.disabled = false;
           if (this.btnCopyCode) this.btnCopyCode.disabled = false;
+          if (welcomeData && welcomeData.roomSettings) {
+            this.selectedTheme = welcomeData.roomSettings.theme !== undefined ? welcomeData.roomSettings.theme : '';
+            this.selectedCount = welcomeData.roomSettings.count || 12;
+            this.selectedDiff = welcomeData.roomSettings.diff || 'medium';
+          }
+          this.updateRoomSettingsDisplay();
           this.renderRoomPlayerSlots(welcomeData.players, welcomeData.maxPlayers, false);
           this.showScreen('screen-room');
           this.showToast(`Berhasil gabung sebagai ${this.playerName || ('Pemain ' + welcomeData.playerNum)}! Klik SIAP untuk bermain.`);
@@ -1662,9 +1880,37 @@
       const pNum = msg.playerNum || 2;
 
       switch (msg.type) {
+        case 'room-settings-update':
+          if (msg.theme !== undefined) this.selectedTheme = msg.theme;
+          if (msg.count !== undefined) this.selectedCount = msg.count;
+          if (msg.diff !== undefined) this.selectedDiff = msg.diff;
+          this.updateRoomSettingsDisplay();
+          this.showToast(`⚙️ Pengaturan diubah: ${this._themeLabel(this.selectedTheme)} • ${this.selectedCount} Soal • ${this._diffLabel(this.selectedDiff)}`);
+          break;
+
+        case 'play-again-vote':
+          if (window.MP?.isHost) {
+            this.registerPlayAgainVote(pNum);
+          }
+          break;
+
+        case 'play-again-status':
+          if (!window.MP?.isHost) {
+            this.updatePlayAgainStatus(Array.isArray(msg.votes) ? msg.votes : []);
+          }
+          break;
+
+        case 'play-again-approved':
+          if (window.MP && !window.MP.isHost) {
+            window.MP.resetReadyStates();
+            this.enterRoomAfterPlayAgain();
+          }
+          break;
+
         case 'init':
           // Diterima guest saat puzzle siap
           this.puzzle = msg.puzzle;
+          this.rememberPuzzleWords(this.puzzle.theme || this.selectedTheme || 'campuran', this.puzzle.words);
           this.hideLoading();
           this.coopScores.clear();
           if (msg.players && Array.isArray(msg.players)) {
@@ -1679,14 +1925,17 @@
             });
           }
           this.initGameBoard();
+          this.notifyIfFallback(this.puzzle);
           break;
 
         case 'syncGameState':
           // Rejoin / Mid-game join synchronization
           this.puzzle = msg.puzzle;
+          this.rememberPuzzleWords(this.puzzle.theme || this.selectedTheme || 'campuran', this.puzzle.words);
           this.hideLoading();
           this.userGrid = msg.userGrid || {};
           this.cellSources = msg.cellSources || {};
+          this.hintedCells = msg.hintedCells || {};
           this.elapsedSeconds = msg.elapsedSeconds || 0;
           this.coopScores.clear();
           if (msg.leaderboard && Array.isArray(msg.leaderboard)) {
@@ -1699,10 +1948,19 @@
         case 'letter': {
           // Update huruf dari partner
           const key = `${msg.r}-${msg.c}`;
+          if (this.isCellHinted(msg.r, msg.c) && !msg.isHint) break;
           this.userGrid[key] = msg.letter;
-          this.cellSources[key] = 'partner';
+          const senderNum = msg.playerNum || pNum;
+          if (msg.letter) {
+            this.cellSources[key] = senderNum;
+          } else {
+            delete this.cellSources[key];
+          }
+          if (msg.isHint) {
+            this.hintedCells[key] = true;
+          }
           this.updateCellVisual(msg.r, msg.c);
-          this.checkWordsStatus(true);
+          // Tidak memanggil checkWordsStatus(true): penilaian kata hanya via 'wordSolved'
           const currentCursor = this.partnerCursors.get(pNum) || {};
           this.partnerCursors.set(pNum, {
             r: msg.r,
@@ -1725,8 +1983,54 @@
           this.partnerCursors.delete(pNum);
           this.renderPartnerCursors();
           const dName = msg.name || `Pemain ${pNum}`;
-          this.showToast(`⚠️ ${dName} meninggalkan ronde.`);
+          const playerInfo = this.coopScores.get(pNum) || {
+            playerNum: pNum,
+            name: dName,
+            score: 0,
+            wordsSolved: 0,
+            hintsUsed: 0
+          };
+          playerInfo.name = dName;
+          playerInfo.connected = false;
+          this.coopScores.set(pNum, playerInfo);
+          if (window.MP?.isHost) {
+            this.updatePlayAgainStatus();
+            window.MP.send({ type: 'play-again-status', votes: [...this.playAgainVotes] });
+            const connectedPlayers = window.MP.getPlayerList();
+            if (this.playAgainVotes.size === connectedPlayers.length && connectedPlayers.length > 0) {
+              this.registerPlayAgainVote(connectedPlayers[0].playerNum);
+            }
+          }
+          this.showToast(`⚠️ ${dName} terputus dari permainan. Ia dapat bergabung kembali dengan kode room.`);
           this.setPartnerStatus('connected');
+          if (this.modalLiveLeaderboard?.classList.contains('active')) {
+            this.renderLeaderboardList(this.liveLeaderboardList);
+          }
+          if (this.resultCoopLeaderboard?.style.display !== 'none') {
+            this.renderLeaderboardList(this.resultLeaderboardList);
+          }
+          break;
+        }
+
+        case 'player-reconnected': {
+          this.partnerCursors.delete(pNum);
+          this.renderPartnerCursors();
+          const rName = msg.name || `Pemain ${pNum}`;
+          const playerInfo = this.coopScores.get(pNum) || {
+            playerNum: pNum,
+            name: rName,
+            score: 0,
+            wordsSolved: 0,
+            hintsUsed: 0
+          };
+          playerInfo.name = rName;
+          playerInfo.connected = true;
+          this.coopScores.set(pNum, playerInfo);
+          this.showToast(`✅ ${rName} bergabung kembali ke permainan.`);
+          this.setPartnerStatus('connected');
+          if (this.modalLiveLeaderboard?.classList.contains('active')) {
+            this.renderLeaderboardList(this.liveLeaderboardList);
+          }
           break;
         }
 
@@ -1734,7 +2038,8 @@
           // Update kata yang dipecahkan partner
           if (this.puzzle && this.puzzle.words[msg.wordIdx]) {
             const solvedWord = this.puzzle.words[msg.wordIdx];
-            solvedWord.solved = true;
+            const solverNum = msg.solverNum || pNum;
+            const solverName = msg.solverName || `Pemain ${solverNum}`;
 
             // Pastikan semua huruf kata yang terpecahkan langsung terisi di userGrid
             for (let i = 0; i < solvedWord.word.length; i++) {
@@ -1742,22 +2047,32 @@
               const c = solvedWord.dir === 'across' ? solvedWord.col + i : solvedWord.col;
               const wKey = `${r}-${c}`;
               this.userGrid[wKey] = solvedWord.word[i];
-              this.cellSources[wKey] = 'partner';
+              this.cellSources[wKey] = solverNum;
               this.updateCellVisual(r, c);
             }
 
-            const solverNum = msg.solverNum || pNum;
-            const solverName = msg.solverName || `Pemain ${solverNum}`;
-            const sInfo = this.coopScores.get(solverNum) || {
-              playerNum: solverNum,
-              name: solverName,
-              score: 0,
-              wordsSolved: 0,
-              hintsUsed: 0
-            };
-            sInfo.score += 100;
-            sInfo.wordsSolved += 1;
-            this.coopScores.set(solverNum, sInfo);
+            if (!solvedWord.solved) {
+              solvedWord.solved = true;
+              const sInfo = this.coopScores.get(solverNum) || {
+                playerNum: solverNum,
+                name: solverName,
+                score: 0,
+                wordsSolved: 0,
+                hintsUsed: 0
+              };
+              const completionBonus = Number(msg.completionBonus) || 0;
+              sInfo.score += 100 + completionBonus;
+              sInfo.wordsSolved += 1;
+              this.coopScores.set(solverNum, sInfo);
+
+              const myNum = window.MP ? window.MP.playerNum : 1;
+              if (solverNum === myNum) {
+                this.score = sInfo.score;
+                this.wordsSolvedCount = sInfo.wordsSolved;
+                this.completionBonus = completionBonus;
+                this.hudScore.textContent = this.score;
+              }
+            }
 
             this.showToast(`✨ ${solverName} berhasil menjawab "${solvedWord.word}"! (+100)`);
           }
@@ -1766,6 +2081,11 @@
           this.refreshSolvedVisuals();
           if (this.modalLiveLeaderboard?.classList.contains('active')) {
             this.renderLeaderboardList(this.liveLeaderboardList);
+          }
+
+          // Cek apakah semua kata sudah tuntas
+          if (this.puzzle && this.puzzle.words.every(w => w.solved) && !this.isGameOver) {
+            this.showResult(true);
           }
           break;
         }
@@ -1791,10 +2111,7 @@
         }
 
         case 'scoreUpdate':
-          if (msg.score !== undefined) {
-            this.score = msg.score;
-            this.hudScore.textContent = this.score;
-          }
+          // Di mode co-op akumulasi individu, skor dilacak terpisah per pemain via coopScores
           break;
 
         case 'request-start-game':
@@ -1849,13 +2166,12 @@
         }
 
         case 'finish':
-          if (msg.finalScore !== undefined) {
-            this.score = msg.finalScore;
-          }
           if (msg.elapsedSeconds !== undefined) {
             this.elapsedSeconds = msg.elapsedSeconds;
           }
-          this.showResult(true);
+          if (!this.isGameOver) {
+            this.showResult(true);
+          }
           break;
       }
     }
@@ -1919,7 +2235,15 @@
     // ==========================================
     async fetchPuzzle(theme, difficulty, count = 12) {
       const isMixed = !theme || theme === 'acak' || theme === 'campuran';
-      const payload = { theme: isMixed ? 'campuran' : theme, difficulty, count };
+      const themeKey = isMixed ? 'campuran' : theme;
+      const history = this.getRecentPuzzleHistory(themeKey);
+      const payload = {
+        theme: themeKey,
+        difficulty,
+        count,
+        avoidWords: history.map(item => item.word),
+        avoidClues: history.map(item => item.clue)
+      };
       try {
         const res = await fetch('/api/generate-puzzle', {
           method: 'POST',
@@ -1927,17 +2251,117 @@
           body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error('API Respon status ' + res.status);
-        return await res.json();
+        const puzzleData = await res.json();
+        if (!Array.isArray(puzzleData.words)) {
+          throw new Error('API tidak mengembalikan daftar kata');
+        }
+        return puzzleData;
       } catch (err) {
         console.warn('Gagal fetch /api/generate-puzzle, fallback offline aktif:', err);
-        const themeKey = isMixed ? 'campuran' : (CLIENT_FALLBACKS[theme] ? theme : 'campuran');
-        const pool = CLIENT_FALLBACKS[themeKey] || CLIENT_FALLBACKS.campuran;
-        const shuffled = [...pool].sort(() => Math.random() - 0.5);
-        return {
+        const fallbackTheme = CLIENT_FALLBACKS[themeKey] ? themeKey : 'campuran';
+        const pool = CLIENT_FALLBACKS[fallbackTheme] || CLIENT_FALLBACKS.campuran;
+        const allFallbackWords = [...pool, ...Object.values(CLIENT_FALLBACKS).flat()];
+        const fallbackPool = [...new Map(
+          allFallbackWords.map(item => [item.word.toUpperCase(), item])
+        ).values()];
+        const usedWords = new Set(history.map(item => item.word));
+        const usedClues = new Set(history.map(item => this.normalizePuzzleClue(item.clue)));
+        const freshWords = fallbackPool.filter(item =>
+          !usedWords.has(item.word.toUpperCase()) &&
+          !usedClues.has(this.normalizePuzzleClue(item.clue))
+        );
+        const freshSelection = this.shufflePuzzleWords(freshWords).slice(0, count);
+        if (freshSelection.length < count) {
+          const freshSet = new Set(freshWords);
+          const previouslyUsed = this.shufflePuzzleWords(fallbackPool.filter(item => !freshSet.has(item)));
+          freshSelection.push(...previouslyUsed.slice(0, count - freshSelection.length));
+        }
+        const fallbackData = {
           theme: isMixed ? 'campuran' : themeKey,
           difficulty: difficulty || 'medium',
-          words: shuffled.slice(0, count)
+          words: freshSelection,
+          source: 'client-fallback'
         };
+        return fallbackData;
+      }
+    }
+
+    notifyIfFallback(puzzleData) {
+      if (puzzleData.source === 'fallback' || puzzleData.source === 'client-fallback' || puzzleData.source === 'mixed') {
+        this.showToast('Sebagian soal memakai bank offline karena AI tidak memberi cukup jawaban baru.', 4000);
+      }
+    }
+
+    normalizePuzzleClue(clue) {
+      return String(clue || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+    }
+
+    shufflePuzzleWords(words) {
+      const shuffled = [...words];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    readPuzzleHistory() {
+      if (typeof localStorage === 'undefined') return {};
+      try {
+        const savedHistory = localStorage.getItem(PUZZLE_HISTORY_KEY);
+        if (!savedHistory) return {};
+        const history = JSON.parse(savedHistory);
+        return history && typeof history === 'object' && !Array.isArray(history) ? history : {};
+      } catch (err) {
+        console.warn('Riwayat puzzle lokal tidak dapat dibaca; riwayat akan dibuat ulang.', err);
+        return {};
+      }
+    }
+
+    getRecentPuzzleHistory(theme) {
+      const history = this.readPuzzleHistory();
+      const keys = theme === 'campuran' ? ['campuran'] : [theme, 'campuran'];
+      const entries = keys.flatMap(key => Array.isArray(history[key]) ? history[key] : []);
+      const seen = new Set();
+      return entries.filter(item => {
+        if (!item || typeof item.word !== 'string' || typeof item.clue !== 'string') return false;
+        const word = item.word.toUpperCase().replace(/[^A-Z]/g, '');
+        const clue = this.normalizePuzzleClue(item.clue);
+        if (!word || !clue) return false;
+        const key = `${word}|${clue}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).slice(-PUZZLE_HISTORY_LIMIT * keys.length);
+    }
+
+    rememberPuzzleWords(theme, words) {
+      if (typeof localStorage === 'undefined' || !Array.isArray(words)) return;
+      const history = this.readPuzzleHistory();
+      const previous = Array.isArray(history[theme]) ? history[theme] : [];
+      const additions = words
+        .filter(item => item && typeof item.word === 'string' && typeof item.clue === 'string')
+        .map(item => ({
+          word: item.word.toUpperCase().replace(/[^A-Z]/g, ''),
+          clue: item.clue.trim()
+        }))
+        .filter(item => item.word && item.clue);
+      const uniqueEntries = new Map();
+      [...previous, ...additions].forEach(item => {
+        if (item && typeof item.word === 'string' && typeof item.clue === 'string') {
+          uniqueEntries.set(`${item.word}|${this.normalizePuzzleClue(item.clue)}`, item);
+        }
+      });
+      history[theme] = [...uniqueEntries.values()].slice(-PUZZLE_HISTORY_LIMIT);
+      try {
+        localStorage.setItem(PUZZLE_HISTORY_KEY, JSON.stringify(history));
+      } catch (err) {
+        console.warn('Riwayat puzzle tidak dapat disimpan di penyimpanan browser.', err);
       }
     }
 
@@ -1953,6 +2377,7 @@
         this.elapsedSeconds = 0;
         this.userGrid = {};
         this.cellSources = {};
+        this.hintedCells = {};
         this.activeCell = null;
         this.wordsSolvedCount = 0;
         this.hintsUsedCount = 0;
@@ -1985,6 +2410,21 @@
         this.hudRole.textContent = 'CO-OP 🤝';
       } else {
         this.hudRole.textContent = 'SOLO';
+      }
+
+      // Player identity badge (P1–P6)
+      if (this.hudPlayerIdentity) {
+        if (this.mode === 'coop') {
+          const myNum = window.MP ? window.MP.playerNum : 1;
+          const colors = { 1: '#38bdf8', 2: '#f43f5e', 3: '#f59e0b', 4: '#10b981', 5: '#a855f7', 6: '#ec4899' };
+          this.hudPlayerIdentity.style.display = 'inline-flex';
+          const dot = this.hudPlayerIdentity.querySelector('.pi-dot');
+          const label = this.hudPlayerIdentity.querySelector('.pi-label');
+          if (dot) dot.style.background = colors[myNum] || '#38bdf8';
+          if (label) label.textContent = `Kamu (P${myNum})`;
+        } else {
+          this.hudPlayerIdentity.style.display = 'none';
+        }
       }
 
       this.setPartnerStatus(this.mode === 'coop' ? 'connected' : null);
@@ -2170,9 +2610,16 @@
       const wordIdx = this.activeDir === 'across' ? cellData.acrossWordIdx : cellData.downWordIdx;
       const word = wordIdx !== null ? this.puzzle.words[wordIdx] : null;
 
-      // Hapus highlight sebelumnya
-      document.querySelectorAll('.grid-cell').forEach(el => {
-        el.classList.remove('cell-focused', 'cell-word-active');
+      const myPlayerNum = (this.mode === 'coop' && window.MP) ? window.MP.playerNum : 1;
+      const playerColorClass = `active-p${myPlayerNum}`;
+
+      // Hapus highlight aktif lokal sebelumnya
+      document.querySelectorAll('.grid-cell.cell-focused, .grid-cell.cell-word-active').forEach(el => {
+        el.classList.remove(
+          'cell-focused', 'cell-word-active',
+          'active-p1', 'active-p2', 'active-p3',
+          'active-p4', 'active-p5', 'active-p6'
+        );
       });
       document.querySelectorAll('.clue-item').forEach(el => el.classList.remove('active-clue'));
 
@@ -2182,7 +2629,7 @@
           const r = word.dir === 'across' ? word.row : word.row + i;
           const c = word.dir === 'across' ? word.col + i : word.col;
           const cellEl = document.querySelector(`.grid-cell[data-r="${r}"][data-c="${c}"]`);
-          if (cellEl) cellEl.classList.add('cell-word-active');
+          if (cellEl) cellEl.classList.add('cell-word-active', playerColorClass);
         }
 
         // Highlight petunjuk di panel
@@ -2196,8 +2643,13 @@
       // Highlight sel aktif yang sedang difokuskan
       const focusedEl = document.querySelector(`.grid-cell[data-r="${this.activeCell.r}"][data-c="${this.activeCell.c}"]`);
       if (focusedEl) {
-        focusedEl.classList.add('cell-focused');
+        focusedEl.classList.add('cell-focused', playerColorClass);
         focusedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+
+      // Pastikan highlight kursor partner tetap tergambar jika bertubrukan
+      if (this.mode === 'coop') {
+        this.renderPartnerCursors();
       }
 
       // Update tampilan kartu petunjuk aktif
@@ -2209,7 +2661,8 @@
           type: 'cursor',
           r: this.activeCell.r,
           c: this.activeCell.c,
-          dir: this.activeDir
+          dir: this.activeDir,
+          playerNum: myPlayerNum
         });
       }
     }
@@ -2291,6 +2744,14 @@
       return false;
     }
 
+    isCellHinted(r, c) {
+      return Boolean(this.hintedCells[`${r}-${c}`]);
+    }
+
+    isCellUnavailable(r, c) {
+      return this.isCellLocked(r, c) || this.isCellHinted(r, c);
+    }
+
     _findNextUnlockedInWord(startR, startC) {
       const key = `${startR}-${startC}`;
       const cellData = this.puzzle.cells[key];
@@ -2302,7 +2763,7 @@
       for (let i = 0; i < word.word.length; i++) {
         const r = word.dir === 'across' ? word.row : word.row + i;
         const c = word.dir === 'across' ? word.col + i : word.col;
-        if (!this.isCellLocked(r, c)) {
+        if (!this.isCellUnavailable(r, c)) {
           return { r, c };
         }
       }
@@ -2324,7 +2785,7 @@
       for (let i = currentIndex - 1; i >= 0; i--) {
         const r = word.dir === 'across' ? word.row : word.row + i;
         const c = word.dir === 'across' ? word.col + i : word.col;
-        if (!this.isCellLocked(r, c)) {
+        if (!this.isCellUnavailable(r, c)) {
           return { r, c };
         }
       }
@@ -2457,8 +2918,8 @@
       let cellData = this.puzzle.cells[key];
       if (!cellData) return;
 
-      // Jika kotak saat ini sudah terkunci karena sudah benar, lompat ke kotak berikutnya yang belum terkunci
-      if (this.isCellLocked(r, c)) {
+      // Skip cells locked by a solved word or a revealed hint.
+      if (this.isCellUnavailable(r, c)) {
         const nextUnlocked = this._findNextUnlockedInWord(r, c);
         if (!nextUnlocked) {
           this.showToast('Kata ini sudah selesai & benar!');
@@ -2471,8 +2932,9 @@
         cellData = this.puzzle.cells[key];
       }
 
+      const myNum = window.MP ? window.MP.playerNum : 1;
       this.userGrid[key] = char;
-      this.cellSources[key] = 'self';
+      this.cellSources[key] = myNum;
       sound.playType();
       triggerHaptic([20]);
 
@@ -2485,7 +2947,8 @@
           r,
           c,
           letter: char,
-          dir: this.activeDir
+          dir: this.activeDir,
+          playerNum: myNum
         });
       }
 
@@ -2502,7 +2965,7 @@
       const key = `${r}-${c}`;
 
       // Jika kotak aktif tidak terkunci dan ada isinya, hapus
-      if (!this.isCellLocked(r, c) && this.userGrid[key]) {
+      if (!this.isCellUnavailable(r, c) && this.userGrid[key]) {
         delete this.userGrid[key];
         delete this.cellSources[key];
         this.updateCellVisual(r, c);
@@ -2547,10 +3010,19 @@
       const letter = this.userGrid[key] || '';
       if (charSpan) charSpan.textContent = letter;
 
-      cellEl.classList.remove('cell-self-input', 'cell-partner-input');
+      cellEl.classList.remove(
+        'cell-self-input', 'cell-partner-input',
+        'cell-input-p1', 'cell-input-p2', 'cell-input-p3',
+        'cell-input-p4', 'cell-input-p5', 'cell-input-p6'
+      );
       if (letter) {
-        const source = this.cellSources[key] || 'self';
-        cellEl.classList.add(source === 'partner' ? 'cell-partner-input' : 'cell-self-input');
+        let sourceNum = this.cellSources[key];
+        if (sourceNum === 'self' || !sourceNum) {
+          sourceNum = window.MP ? window.MP.playerNum : 1;
+        } else if (sourceNum === 'partner') {
+          sourceNum = 2;
+        }
+        cellEl.classList.add(`cell-input-p${sourceNum}`);
       }
 
       if (this.isCellLocked(r, c)) {
@@ -2574,7 +3046,7 @@
       for (let i = currentIndex + 1; i < word.word.length; i++) {
         const r = word.dir === 'across' ? word.row : word.row + i;
         const c = word.dir === 'across' ? word.col + i : word.col;
-        if (!this.isCellLocked(r, c)) {
+        if (!this.isCellUnavailable(r, c)) {
           this.activeCell = { r, c };
           this.highlightActiveWord();
           return;
@@ -2598,7 +3070,7 @@
       for (let i = currentIndex - 1; i >= 0; i--) {
         const r = word.dir === 'across' ? word.row : word.row + i;
         const c = word.dir === 'across' ? word.col + i : word.col;
-        if (!this.isCellLocked(r, c)) {
+        if (!this.isCellUnavailable(r, c)) {
           this.activeCell = { r, c };
           this.highlightActiveWord();
           return;
@@ -2631,6 +3103,7 @@
     // ==========================================
     checkWordsStatus(triggerFeedback = true) {
       let newlySolved = false;
+      const newlySolvedWordIndices = [];
 
       this.puzzle.words.forEach((w, idx) => {
         if (w.solved) return;
@@ -2656,6 +3129,7 @@
         if (isComplete && isCorrect) {
           w.solved = true;
           newlySolved = true;
+          newlySolvedWordIndices.push(idx);
           this.wordsSolvedCount++;
           this.score += 100;
           this.hudScore.textContent = this.score;
@@ -2678,14 +3152,6 @@
             myInfo.score += 100;
             myInfo.wordsSolved += 1;
             this.coopScores.set(myNum, myInfo);
-
-            window.MP.send({
-              type: 'wordSolved',
-              wordIdx: idx,
-              solverNum: myNum,
-              solverName: this.playerName,
-              score: this.score
-            });
           }
         }
       });
@@ -2702,12 +3168,36 @@
         this.hudScore.textContent = this.score;
 
         if (this.mode === 'coop') {
+          const myNum = window.MP ? window.MP.playerNum : 1;
+          const myInfo = this.coopScores.get(myNum);
+          if (myInfo) myInfo.score += this.completionBonus;
+        }
+      }
+
+      if (this.mode === 'coop') {
+        const myNum = window.MP ? window.MP.playerNum : 1;
+        const bonusWordIdx = allSolved && !this.isGameOver
+          ? newlySolvedWordIndices[newlySolvedWordIndices.length - 1]
+          : null;
+        newlySolvedWordIndices.forEach(wordIdx => {
+          window.MP.send({
+            type: 'wordSolved',
+            wordIdx,
+            solverNum: myNum,
+            solverName: this.playerName,
+            completionBonus: wordIdx === bonusWordIdx ? this.completionBonus : 0
+          });
+        });
+
+        if (allSolved && !this.isGameOver) {
           window.MP.send({
             type: 'finish',
-            finalScore: this.score,
             elapsedSeconds: this.elapsedSeconds
           });
         }
+      }
+
+      if (allSolved && !this.isGameOver) {
         this.showResult(true);
       }
     }
@@ -2800,10 +3290,12 @@
       }
 
       if (emptyIndices.length > 0) {
-        const chosen = emptyIndices[0];
+        const chosen = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
         const key = `${chosen.r}-${chosen.c}`;
+        const myNum = window.MP ? window.MP.playerNum : 1;
         this.userGrid[key] = chosen.char;
-        this.cellSources[key] = 'self';
+        this.cellSources[key] = myNum;
+        this.hintedCells[key] = true;
 
         // Pengurangan 50 poin
         this.score = Math.max(0, this.score - 50);
@@ -2816,7 +3308,6 @@
         this.showToast(`💡 Buka huruf '${chosen.char}' (-50 Poin)`);
 
         if (this.mode === 'coop') {
-          const myNum = window.MP ? window.MP.playerNum : 1;
           const myInfo = this.coopScores.get(myNum) || {
             playerNum: myNum,
             name: this.playerName || `Pemain ${myNum}`,
@@ -2833,16 +3324,14 @@
             r: chosen.r,
             c: chosen.c,
             letter: chosen.char,
-            role: this.role
+            role: this.role,
+            playerNum: myNum,
+            isHint: true
           });
           window.MP.send({
             type: 'hintUsed',
             playerNum: myNum,
             playerName: this.playerName
-          });
-          window.MP.send({
-            type: 'scoreUpdate',
-            score: this.score
           });
         }
 
@@ -2901,18 +3390,27 @@
         this.resultBonus.style.display = 'none';
       }
 
+      if (window.MP) {
+        window.MP.isGameInProgress = false;
+      }
+
+      this.playAgainVotes.clear();
+      this.hasVotedPlayAgain = false;
+      this.playAgainTransitionStarted = false;
+
       this.resultSummary.textContent = `Kamu menyelesaikan ${solvedCount} dari ${totalCount} kata.`;
 
       // Kalkulasi Akumulasi Skor Transparan
       const wordsPts = this.wordsSolvedCount * 100;
-      const bonusPts = isVictory ? 300 : 0;
+      const bonusPts = isVictory && (this.mode !== 'coop' || this.completionBonus > 0) ? 300 : 0;
       const hintPenalty = this.hintsUsedCount * 50;
       const totalAccumulated = Math.max(0, wordsPts + bonusPts - hintPenalty);
       this.score = totalAccumulated;
 
       this.resultScore.textContent = this.score;
       if (this.resultTime) {
-        this.resultTime.textContent = `⏱ ${m}:${s}`;
+        this.resultTime.innerHTML = `<i data-lucide="clock-3" aria-hidden="true"></i> ${m}:${s}`;
+        if (window.lucide) window.lucide.createIcons();
       }
 
       // Tampilkan Breakdown Rincian
@@ -2936,6 +3434,14 @@
         this.renderLeaderboardList(this.resultLeaderboardList);
       } else if (this.resultCoopLeaderboard) {
         this.resultCoopLeaderboard.style.display = 'none';
+      }
+      if (this.btnPlayAgain) {
+        this.btnPlayAgain.style.display = this.mode === 'coop' ? 'inline-flex' : 'none';
+        this.btnPlayAgain.disabled = false;
+      }
+      if (this.playAgainStatus) {
+        this.playAgainStatus.style.display = this.mode === 'coop' ? 'block' : 'none';
+        this.updatePlayAgainStatus();
       }
 
       this.showScreen('screen-result');
@@ -2974,4 +3480,3 @@
     window.GameAPI = new SilangKataGame();
   });
 })();
-

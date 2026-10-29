@@ -368,6 +368,45 @@ function validateAndFilterWords(words, minLen, maxLen, targetCount) {
   return validWords.slice(0, targetCount);
 }
 
+function normalizeAvoidWords(words) {
+  if (!Array.isArray(words)) return new Set();
+  return new Set(
+    words
+      .filter(word => typeof word === 'string')
+      .map(word => word.toUpperCase().replace(/[^A-Z]/g, ''))
+      .filter(word => word.length >= 4 && word.length <= 8)
+      .slice(0, 120)
+  );
+}
+
+function normalizeClue(clue) {
+  return clue.normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function normalizeAvoidClues(clues) {
+  if (!Array.isArray(clues)) return new Set();
+  return new Set(
+    clues
+      .filter(clue => typeof clue === 'string')
+      .map(normalizeClue)
+      .filter(Boolean)
+      .slice(0, 80)
+  );
+}
+
+function shuffle(items) {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 // Helper untuk memanggil API berbasis OpenAI format (Groq, OpenRouter, DeepSeek)
 async function callOpenAICompatible({ url, apiKey, model, promptText, timeoutMs = 15000, extraHeaders = {} }) {
   const controller = new AbortController();
@@ -408,41 +447,43 @@ async function callOpenAICompatible({ url, apiKey, model, promptText, timeoutMs 
 }
 
 // Helper fallback lokal jika Gemini/AI tidak tersedia
-function getFallbackPuzzle(theme, difficulty, targetCount = 12) {
+function getFallbackPuzzle(theme, difficulty, targetCount = 12, avoidWords = new Set(), avoidClues = new Set()) {
   const isMixed = !theme || theme === 'acak' || theme === 'campuran';
   const diffConfig = DIFFICULTY_MAP[difficulty] || DIFFICULTY_MAP.medium;
   const themeKey = isMixed ? 'campuran' : (FALLBACK_DICTIONARIES[theme] ? theme : 'campuran');
   const source = FALLBACK_DICTIONARIES[themeKey] || FALLBACK_DICTIONARIES.campuran;
 
-  const filtered = source.filter(
-    item => item.word.length >= diffConfig.minLen && item.word.length <= diffConfig.maxLen
-  );
+  const allWords = [...source, ...Object.values(FALLBACK_DICTIONARIES).flat()];
+  const seenWords = new Set();
+  const freshPool = [];
+  const usedBeforePool = [];
+  for (const item of allWords) {
+    const word = (item.word || '').toUpperCase();
+    if (
+      word.length < diffConfig.minLen ||
+      word.length > diffConfig.maxLen ||
+      seenWords.has(word)
+    ) continue;
 
-  let pool = [...(filtered.length >= targetCount ? filtered : source)];
-
-  // Jika targetCount melebihi isi satu kategori (misal 25, 30, 40, 50 kata),
-  // tambahkan kata unik dari kategori lain agar jumlah kata selalu terpenuhi
-  if (pool.length < targetCount) {
-    const seenWords = new Set(pool.map(item => item.word.toUpperCase()));
-    const otherWords = Object.values(FALLBACK_DICTIONARIES).flat();
-    for (const item of otherWords) {
-      const w = (item.word || '').toUpperCase();
-      if (!seenWords.has(w) && w.length >= diffConfig.minLen && w.length <= diffConfig.maxLen) {
-        seenWords.add(w);
-        pool.push(item);
-        if (pool.length >= targetCount) break;
-      }
+    seenWords.add(word);
+    if (avoidWords.has(word) || avoidClues.has(normalizeClue(item.clue || ''))) {
+      usedBeforePool.push(item);
+    } else {
+      freshPool.push(item);
     }
   }
 
-  // Acak urutan kata
-  const shuffled = pool.sort(() => Math.random() - 0.5);
+  const pool = freshPool.length >= targetCount
+    ? freshPool
+    : [...freshPool, ...usedBeforePool];
+  const shuffled = shuffle(pool);
 
   return {
     theme: isMixed ? 'campuran' : themeKey,
     difficulty,
     words: shuffled.slice(0, targetCount),
-    source: 'fallback'
+    source: 'fallback',
+    freshWordCount: Math.min(freshPool.length, targetCount)
   };
 }
 
@@ -498,12 +539,15 @@ export default async function handler(req, res) {
   }
   targetCount = Math.min(50, Math.max(5, targetCount));
 
+  const avoidWords = normalizeAvoidWords(body.avoidWords);
+  const avoidClues = normalizeAvoidClues(body.avoidClues);
+  const generationCount = Math.min(60, targetCount + Math.min(10, Math.ceil(targetCount * 0.25)));
   const useCache = body.useCache === true;
   const cacheKey = `${theme}_${difficulty}_${targetCount}`;
   const now = Date.now();
 
   // Hanya gunakan cache jika diminta eksplisit (misal untuk sinkronisasi room pemain bersama)
-  if (useCache) {
+  if (useCache && avoidWords.size === 0 && avoidClues.size === 0) {
     const cached = puzzleCache.get(cacheKey);
     if (cached && now - cached.timestamp < CACHE_TTL_MS) {
       return res.status(200).json({
@@ -526,7 +570,7 @@ export default async function handler(req, res) {
   // Jika tidak ada API key di environment, langsung gunakan kamus fallback lokal
   if (!hasAnyApiKey) {
     console.warn('[AI] Tidak ada API key AI yang disetel. Menggunakan fallback lokal.');
-    const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount);
+    const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount, avoidWords, avoidClues);
     return res.status(200).json(fallbackData);
   }
 
@@ -546,8 +590,13 @@ ${themeInstruction}
 Tingkat kesulitan: ${diffConfig.label} (${difficulty})
 Kriteria kesulitan: ${diffConfig.desc}
 Panjang kata: 4 sampai 8 huruf (fleksibel agar mudah berpotongan di papan TTS)
-Jumlah kata yang diminta: ${targetCount} kata
+Jumlah kata final: ${targetCount} kata. Buat ${generationCount} kandidat agar jawaban lama bisa diganti.
 ID Sesi Acak: #${randomEntropy}
+
+HINDARI PENGULANGAN DARI PERMAINAN PEMAIN INI:
+- Jangan gunakan jawaban berikut: ${[...avoidWords].join(', ') || '(belum ada riwayat)'}
+- Jangan ulangi petunjuk berikut (meski dengan sedikit perubahan kata): ${[...avoidClues].slice(0, 40).join(' | ') || '(belum ada riwayat)'}
+- Pilih subtopik, kosakata, dan gaya petunjuk yang berbeda dari daftar tersebut. Jika daftar panjang, utamakan kata baru.
 
 ATURAN KOSAKATA & CLUE (WAJIB DIPATUHI SECARA KETAT):
 1. HINDARI KATA GENERIK / KLISE MEMBOSANKAN:
@@ -703,20 +752,40 @@ Format output STRICT JSON (tanpa markdown, tanpa teks pengantar):
     // 5. PRIORITAS 5: KAMUS FALLBACK OFFLINE LOKAL (Zero Downtime)
     if (!parsed || !Array.isArray(parsed.words)) {
       console.warn('[AI] Semua provider AI tidak tersedia / gagal. Menggunakan kamus offline fallback.');
-      const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount);
+      const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount, avoidWords, avoidClues);
       return res.status(200).json(fallbackData);
     }
 
-    const validWords = validateAndFilterWords(
+    const validCandidates = validateAndFilterWords(
       parsed.words,
       diffConfig.minLen,
       diffConfig.maxLen,
-      targetCount
+      generationCount
     );
+    let validWords = validCandidates
+      .filter(item => !avoidWords.has(item.word) && !avoidClues.has(normalizeClue(item.clue)))
+      .slice(0, targetCount);
+
+    if (validWords.length >= 5 && validWords.length < targetCount) {
+      const fillerAvoidWords = new Set([...avoidWords, ...validWords.map(item => item.word)]);
+      const fillerAvoidClues = new Set([...avoidClues, ...validWords.map(item => normalizeClue(item.clue))]);
+      const missingCount = targetCount - validWords.length;
+      const fallbackWords = getFallbackPuzzle(
+        theme,
+        difficulty,
+        missingCount,
+        fillerAvoidWords,
+        fillerAvoidClues
+      ).words;
+      if (fallbackWords.length) {
+        validWords = [...validWords, ...fallbackWords];
+        activeSource = 'mixed';
+      }
+    }
 
     if (validWords.length < 5) {
-      console.warn('[AI] Jumlah kata valid kurang dari minimal. Menggunakan kamus offline fallback.');
-      const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount);
+      console.warn('[AI] Kata baru dari AI kurang dari minimal. Menggunakan kamus offline.');
+      const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount, avoidWords, avoidClues);
       return res.status(200).json(fallbackData);
     }
 
@@ -727,13 +796,15 @@ Format output STRICT JSON (tanpa markdown, tanpa teks pengantar):
       source: activeSource
     };
 
-    // Simpan di cache
-    puzzleCache.set(cacheKey, { timestamp: now, data: result });
+    // Cache only results that were not generated against a player's history.
+    if (avoidWords.size === 0 && avoidClues.size === 0) {
+      puzzleCache.set(cacheKey, { timestamp: now, data: result });
+    }
 
     return res.status(200).json(result);
   } catch (err) {
     console.error('Error saat menghubungi Gemini:', err.message);
-    const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount);
+    const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount, avoidWords, avoidClues);
     return res.status(200).json(fallbackData);
   }
 }

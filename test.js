@@ -5,12 +5,14 @@ import fs from 'fs';
 function makeMockRes(label) {
   let statusCode = 200;
   return {
+    data: null,
     setHeader() {},
     status(code) {
       statusCode = code;
       return this;
     },
     json(data) {
+      this.data = data;
       console.log(`✓ [${label}] Status: ${statusCode}, Words: ${data.words?.length}`);
       if (!data.words || data.words.length < 5) {
         throw new Error('Words array missing or too small');
@@ -42,6 +44,74 @@ async function run() {
   await handler({ method: 'POST', body: { theme: 'umum', difficulty: 'easy', count: 8 } }, makeMockRes('POST umum 8 kata'));
   await handler({ method: 'POST', body: { theme: '', difficulty: 'hard', count: 12 } }, makeMockRes('POST campuran/acak 12 kata'));
   await handler({ method: 'GET', query: { theme: 'teknologi', count: 16 } }, makeMockRes('GET teknologi 16 kata'));
+
+  const avoidWords = ['KUCING', 'KELINCI', 'KAMBING', 'BURUNG', 'GAJAH', 'SINGA', 'HARIMAU', 'ZEBRA'];
+  const novelPuzzle = makeMockRes('POST fallback tanpa jawaban lama');
+  await handler({
+    method: 'POST',
+    body: {
+      theme: 'hewan',
+      difficulty: 'medium',
+      count: 8,
+      avoidWords,
+      avoidClues: ['Hewan berkaki empat suka mendengkur dan makan ikan']
+    }
+  }, novelPuzzle);
+  const returnedWords = novelPuzzle.data.words;
+  if (returnedWords.some(item => avoidWords.includes(item.word))) {
+    throw new Error('Fallback repeated a previously used answer');
+  }
+  if (returnedWords.some(item => item.clue === 'Hewan berkaki empat suka mendengkur dan makan ikan')) {
+    throw new Error('Fallback repeated a previously used clue');
+  }
+  console.log('✓ Fallback menghindari jawaban dan clue yang telah digunakan.');
+
+  const originalFetch = global.fetch;
+  process.env.GROQ_API_KEY = 'test-key';
+  global.fetch = async () => ({
+    ok: true,
+    json: async () => ({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            theme: 'hewan',
+            words: [
+              { word: 'KUCING', clue: 'Hewan berkaki empat suka mendengkur dan makan ikan' },
+              { word: 'RUSA', clue: 'Mamalia bertanduk yang bergerak lincah di hutan' },
+              { word: 'SIPUT', clue: 'Moluska bercangkang yang bergerak sangat lambat' },
+              { word: 'KODOK', clue: 'Amfibi bersuara nyaring setelah hujan turun' },
+              { word: 'KUPU', clue: 'Serangga bersayap indah yang berasal dari ulat' },
+              { word: 'KRAIT', clue: 'Ular berbisa dengan gelang hitam putih di tubuh' },
+              { word: 'PAUS', clue: 'Mamalia terbesar yang hidup di lautan' },
+              { word: 'RAYAP', clue: 'Serangga sosial yang memakan kayu kering' },
+              { word: 'KEONG', clue: 'Hewan lunak bercangkang yang hidup di sawah' },
+              { word: 'TUPAI', clue: 'Pengerat kecil lincah yang menyimpan biji-bijian' }
+            ]
+          })
+        }
+      }]
+    })
+  });
+  const novelAiPuzzle = makeMockRes('POST AI tanpa jawaban lama');
+  await handler({
+    method: 'POST',
+    body: {
+      theme: 'hewan',
+      difficulty: 'medium',
+      count: 8,
+      avoidWords,
+      avoidClues: ['Hewan berkaki empat suka mendengkur dan makan ikan']
+    }
+  }, novelAiPuzzle);
+  global.fetch = originalFetch;
+  delete process.env.GROQ_API_KEY;
+  if (novelAiPuzzle.data.source !== 'groq' || novelAiPuzzle.data.words.length !== 8) {
+    throw new Error('AI response was not filtered and filled with enough fresh answers');
+  }
+  if (novelAiPuzzle.data.words.some(item => avoidWords.includes(item.word))) {
+    throw new Error('AI response repeated a previously used answer');
+  }
+  console.log('✓ Hasil AI disaring dari jawaban lama dan diisi kandidat baru.');
 
   // Kembalikan keys
   if (savedKeys.GEMINI) process.env.GEMINI_API_KEY = savedKeys.GEMINI;
@@ -192,6 +262,76 @@ async function run() {
   }
   console.log('✓ Fitur Transfer Host & Kick Player (multiplayer logic, dialogs, styling) terverifikasi.');
 
+  console.log('9. Menguji Konsistensi Warna Pemain P1–P6 & Perbaikan Bug Skor...');
+  if (!cssCode.includes('.cell-input-p1') || !cssCode.includes('.cell-input-p6')) {
+    throw new Error('Per-player input color classes missing in styles.css');
+  }
+  if (!cssCode.includes('.cell-focused.active-p1') || !cssCode.includes('.cell-word-active.active-p1')) {
+    throw new Error('Per-player active cell/word highlight styles missing in styles.css');
+  }
+  if (!appCode.includes('const playerColorClass = `active-p${myPlayerNum}`') ||
+      !cssCode.includes('.player-dot.p6 { background: #ec4899') ||
+      !cssCode.includes('.grid-cell.cell-partner-focused.p6:not(.cell-solved) { outline-color: #ec4899')) {
+    throw new Error('Player colors must stay consistent across local and partner indicators');
+  }
+  if (!appCode.includes('cell-input-p') || !appCode.includes('solverNum === myNum')) {
+    throw new Error('Player color mapping or individual score guard missing in app.js');
+  }
+  if (appCode.includes('this.score = msg.finalScore') ||
+      !appCode.includes('completionBonus: wordIdx === bonusWordIdx ? this.completionBonus : 0')) {
+    throw new Error('Co-op score must remain individual, including the completion bonus');
+  }
+  if (!mpCode.includes('this.hostPlayerNum = 1;\n      this.maxPlayers = 2;')) {
+    throw new Error('Room disconnect must reset host ownership to the room creator');
+  }
+  if (!appCode.includes('e.stopPropagation();\n            this.handleBackspace();')) {
+    throw new Error('Virtual keyboard Backspace must not trigger the global key handler');
+  }
+  if (!mpCode.includes("type: 'player-disconnected'") ||
+      !mpCode.includes("type: 'player-reconnected'") ||
+      !appCode.includes("playerInfo.connected = false") ||
+      !appCode.includes("playerInfo.connected = true") ||
+      !indexHtml.includes('btn-disconnect-rejoin') ||
+      !appCode.includes('this.joinRoomByCode(roomCode)')) {
+    throw new Error('Co-op disconnect presence or rejoin flow missing');
+  }
+  if (!appCode.includes('this.hintedCells = {}') ||
+      !appCode.includes('this.isCellLocked(r, c) || this.isCellHinted(r, c)') ||
+      !appCode.includes('this.hintedCells[key] = true') ||
+      !appCode.includes('isHint: true') ||
+      !appCode.includes('hintedCells: this.hintedCells') ||
+      !appCode.includes('this.hintedCells = msg.hintedCells || {}')) {
+    throw new Error('Hinted letters must remain locked and sync to co-op rejoining players');
+  }
+  if (!appCode.includes('const chosen = emptyIndices[Math.floor(Math.random() * emptyIndices.length)]')) {
+    throw new Error('Hint must reveal a random available letter from the selected word');
+  }
+  if (indexHtml.includes('btn-next-puzzle') ||
+      !indexHtml.includes('btn-play-again') ||
+      !indexHtml.includes('MAIN LAGI') ||
+      !indexHtml.includes('play-again-status') ||
+      !appCode.includes("this.btnPlayAgain.style.display = this.mode === 'coop' ? 'inline-flex' : 'none'") ||
+      !appCode.includes("this.btnPlayAgain.addEventListener('click', () => this.voteToPlayAgain())") ||
+      !appCode.includes('this.registerPlayAgainVote(pNum)') ||
+      !appCode.includes('this.enterRoomAfterPlayAgain()') ||
+      !mpCode.includes("data.type === 'play-again-vote'") ||
+      !mpCode.includes('resetReadyStates()')) {
+    throw new Error('Co-op rematch must wait for unanimous votes, then return all players to room settings');
+  }
+  console.log('✓ Konsistensi warna P1–P6 dan isolasi skor terverifikasi.');
+
+  console.log('10. Menguji Fitur Edit Mode di Lobby Co-op...');
+  if (!indexHtml.includes('room-settings-card') || !indexHtml.includes('modal-room-settings')) {
+    throw new Error('Room settings card or modal markup missing in index.html');
+  }
+  if (!appCode.includes('openRoomSettingsModal') || !appCode.includes('saveRoomSettings')) {
+    throw new Error('Room settings methods missing in app.js');
+  }
+  if (!appCode.includes('room-settings-update') || !mpCode.includes('roomSettings')) {
+    throw new Error('Room settings update message or state missing');
+  }
+  console.log('✓ Fitur Edit Mode Pengaturan Room (UI, broadcast, state) terverifikasi.');
+
   console.log('\nSEMUA TEST LOLOS 100%!');
 }
 
@@ -199,4 +339,3 @@ run().catch((err) => {
   console.error('Test error:', err);
   process.exit(1);
 });
-
