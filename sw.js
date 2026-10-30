@@ -1,5 +1,5 @@
 // sw.js - Service Worker untuk SilangKata PWA
-const CACHE_NAME = 'silangkata-v25';
+const CACHE_NAME = 'silangkata-v26';
 
 const STATIC_ASSETS = [
   '/',
@@ -8,6 +8,15 @@ const STATIC_ASSETS = [
   '/app.js',
   '/multiplayer.js',
   '/manifest.json',
+  '/data/offline-banks/hewan.json',
+  '/data/offline-banks/buah.json',
+  '/data/offline-banks/transportasi.json',
+  '/data/offline-banks/olahraga.json',
+  '/data/offline-banks/makanan.json',
+  '/data/offline-banks/teknologi.json',
+  '/data/offline-banks/umum.json',
+  '/data/offline-banks/ipa.json',
+  '/data/offline-banks/ips.json',
   '/vendor/peerjs.min.js',
   '/icons/icon-192.png',
   '/icons/icon-512.png'

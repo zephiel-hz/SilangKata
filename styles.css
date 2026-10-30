@@ -446,9 +446,15 @@ body.in-game #app,
 .player-name {
   font-weight: 600;
   font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 4px 10px;
   border-radius: var(--radius-full);
   font-size: 0.72rem;
@@ -1608,6 +1614,16 @@ body.in-game #app,
   text-align: center;
 }
 
+.leaderboard-rank svg {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+}
+
+.rank-1 .leaderboard-rank { color: #d6a52a; }
+.rank-2 .leaderboard-rank { color: #89949a; }
+.rank-3 .leaderboard-rank { color: #ad7650; }
+
 .leaderboard-name-box {
   display: flex;
   flex-direction: column;
@@ -1615,8 +1631,17 @@ body.in-game #app,
 }
 
 .leaderboard-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-weight: 700;
   color: var(--text-main);
+}
+
+.leaderboard-name svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
 }
 
 .leaderboard-meta {
@@ -1658,12 +1683,30 @@ body.in-game #app,
 }
 
 .room-settings-summary .setting-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: rgba(56, 189, 248, 0.1);
   border: 1px solid rgba(56, 189, 248, 0.25);
   padding: 3px 8px;
   border-radius: 6px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.room-panel .player-name svg,
+.room-panel .badge svg,
+.room-panel .setting-tag svg,
+.room-panel .btn-slot-action svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  stroke-width: 1.9;
+}
+
+.room-panel .btn-slot-action svg {
+  width: 15px;
+  height: 15px;
 }
 
 .btn-edit-room-settings {
@@ -2323,6 +2366,18 @@ html, body {
 @media (min-width: 900px) {
   .menu-actions { flex-direction: row; }
   .menu-actions .btn { flex: 1; }
+}
+
+.result-box .menu-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.result-box .menu-actions .btn {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 48px;
+  white-space: normal;
 }
 
 @media (max-width: 760px) {

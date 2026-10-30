@@ -19,8 +19,8 @@
   - Setelah ronde selesai, semua pemain dapat memilih **Main Lagi**; room kembali ke pengaturan setelah seluruh pemain terhubung menyetujui.
 - **Generator Kata Otomatis (Multi-Provider AI)**:
   - Generate puzzle baru setiap ronde via Vercel Serverless Function dengan provider AI yang tersedia.
-  - Petunjuk AI dan seluruh kamus fallback ditulis sebagai kalimat Bahasa Indonesia yang jelas, alami, dan spesifik; hasil AI yang berupa frasa terpotong atau menyebut jawabannya disaring.
-  - Riwayat hingga 80 jawaban dan petunjuk terbaru disimpan lokal per tema untuk mengurangi pengulangan; jika AI tidak tersedia, aplikasi memberi tahu saat memakai kamus fallback.
+  - Petunjuk AI dan seluruh kamus fallback ditulis sebagai kalimat Bahasa Indonesia yang jelas, alami, dan spesifik; hasil AI yang berupa frasa terpotong atau menyebut jawabannya disaring. Jika soal AI yang lolos kurang dari jumlah yang diminta, kekurangannya diisi dari bank offline pada tema yang sama tanpa mengulang jawaban. Bank offline tambahan berada di `data/offline-banks/`, dikurasi per tema dengan rujukan sumber, dan disimpan di cache agar tersedia saat offline. Tema campuran mengambil gabungan lintas bidang. Ejaan nama diri dipertahankan, termasuk bentuk historis seperti **Soekarno**.
+  - Riwayat hingga 80 jawaban dan petunjuk terbaru disimpan lokal per tema untuk mengurangi pengulangan; jika AI hanya menghasilkan sebagian soal, aplikasi memberi tahu bahwa sisanya berasal dari kamus fallback.
 - **Client-Side Crossword Grid Engine**:
   - Algoritma penyusunan grid dinamis dan acak di browser tanpa kompilasi/bundler, menjamin bentuk yang selalu bervariasi setiap ronde.
 - **PWA & Offline-First**:
@@ -173,8 +173,8 @@ silangkata/
 - Pastikan kode room 6 karakter dimasukkan dengan tepat (huruf besar/kecil otomatis dinormalisasi).
 - Pada beberapa jaringan korporat atau firewall ketat yang memblokir WebRTC, aktifkan koneksi seluler/tethering.
 
-### 2. Apakah Game Tetap Bisa Dimainkan Jika Kuota Gemini Habis?
-- **Ya!** Endpoint `/api/generate-puzzle.js` memiliki fitur graceful fallback. Jika Google Gemini mengembalikan error kuota (HTTP 429) atau API key tidak disetel, sistem otomatis beralih ke kamus Bahasa Indonesia bawaan tanpa mengganggu pemain.
+### 2. Apakah Game Tetap Bisa Dimainkan Jika Kuota AI Habis?
+- **Ya!** Jika semua provider AI gagal atau API key tidak disetel, sistem memakai kamus Bahasa Indonesia bawaan. Jika AI hanya menghasilkan sebagian soal yang lolos validasi, soal AI tersebut tetap dipakai dan kekurangannya diisi dari kamus fallback sesuai tema.
 
 ### 3. Apakah Bisa Dimainkan di Layar Smartphone Kecil (Mobile)?
 - **Ya!** Ukuran cell grid menggunakan rumus CSS `clamp(26px, 6.5vw, 44px)` yang menyesuaikan lebar layar secara otomatis dari 320px (iPhone SE) hingga desktop 4K. Tersedia pula hidden virtual keyboard helper untuk kenyamanan mengetik di keyboard sentuh mobile.

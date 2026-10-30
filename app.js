@@ -496,6 +496,7 @@
       { word: 'PASPOR', clue: 'Dokumen identitas resmi ini diperlukan saat bepergian ke luar negeri.' },
       { word: 'KARTINI', clue: 'Tokoh pahlawan ini dikenal karena perjuangannya untuk pendidikan dan emansipasi perempuan.' },
       { word: 'PANCASILA', clue: 'Dasar falsafah dan ideologi ini menjadi pedoman bagi bangsa Indonesia.' },
+      { word: 'SOEKARNO', clue: 'Presiden pertama Republik Indonesia ini memproklamasikan kemerdekaan bersama Mohammad Hatta.' },
       { word: 'BALI', clue: 'Pulau di Indonesia ini terkenal sebagai tujuan wisata dan kerap dijuluki Pulau Dewata.' }
     ],
     ipa: [
@@ -543,6 +544,12 @@
       { word: 'MANGGA', clue: 'Buah tropis ini terasa manis dan memiliki daging berwarna oranye.' }
     ]
   };
+
+  const EXPANDED_OFFLINE_THEMES = [
+    'hewan', 'buah', 'transportasi', 'olahraga', 'makanan',
+    'teknologi', 'umum', 'ipa', 'ips'
+  ];
+  const CLIENT_OFFLINE_BANK_CACHE = new Map();
 
   const PUZZLE_HISTORY_KEY = 'silangkata_puzzle_history';
   const PUZZLE_HISTORY_LIMIT = 80;
@@ -941,7 +948,7 @@
       } catch (err) {
         console.error('Error startSoloGame:', err);
         this.hideLoading();
-        this.showToast('Gagal memuat puzzle. Coba lagi.');
+        this.showToast(err.message || 'Gagal memuat puzzle. Coba lagi.');
       }
     }
 
@@ -1036,11 +1043,11 @@
       if (this.btnReadyCoop) {
         if (nextState) {
           this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action is-ready';
-          this.btnReadyCoop.textContent = 'Batalkan siap';
+          this._setRoomButtonLabel(this.btnReadyCoop, 'circle-check', 'Batalkan siap');
           this.showToast('Kamu berstatus SIAP! Menunggu Host memulai permainan.');
         } else {
           this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action';
-          this.btnReadyCoop.textContent = 'Saya siap bermain';
+          this._setRoomButtonLabel(this.btnReadyCoop, 'check', 'Saya siap bermain');
           this.showToast('Status siap dibatalkan.');
         }
       }
@@ -1056,8 +1063,6 @@
       // Urutkan berdasarkan skor tertinggi, lalu kata terbanyak
       list.sort((a, b) => (b.score - a.score) || (b.wordsSolved - a.wordsSolved));
 
-      const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣'];
-
       list.forEach((player, idx) => {
         const itemEl = document.createElement('div');
         itemEl.className = `leaderboard-item rank-${idx + 1} ${player.playerNum === myNum ? 'is-me' : ''}`;
@@ -1067,18 +1072,26 @@
 
         const rankEl = document.createElement('span');
         rankEl.className = 'leaderboard-rank';
-        rankEl.textContent = medals[idx] || `${idx + 1}`;
+        if (idx < 3) {
+          rankEl.appendChild(this._createRoomIcon(idx === 0 ? 'trophy' : 'medal'));
+        } else {
+          rankEl.textContent = `${idx + 1}`;
+        }
 
         const nameBoxEl = document.createElement('div');
         nameBoxEl.className = 'leaderboard-name-box';
 
         const nameEl = document.createElement('span');
         nameEl.className = 'leaderboard-name';
-        nameEl.textContent = (player.playerNum === myNum) ? `👤 ${player.name} (Kamu)` : `👥 ${player.name}`;
+        const isMe = player.playerNum === myNum;
+        nameEl.append(
+          this._createRoomIcon(isMe ? 'user-round' : 'users-round'),
+          document.createTextNode(isMe ? `${player.name} (Kamu)` : player.name)
+        );
 
         const metaEl = document.createElement('span');
         metaEl.className = `leaderboard-meta ${player.connected === false ? 'player-offline' : ''}`;
-        const presence = player.connected === false ? ' • ⚫ Terputus' : '';
+        const presence = player.connected === false ? ' • Terputus' : '';
         metaEl.textContent = `${player.wordsSolved || 0} Kata terjawab • ${player.hintsUsed || 0} Petunjuk${presence}`;
 
         nameBoxEl.appendChild(nameEl);
@@ -1104,7 +1117,7 @@
           const btnTransfer = document.createElement('button');
           btnTransfer.className = 'btn-slot-action btn-transfer';
           btnTransfer.title = `Pindahkan Host ke ${player.name}`;
-          btnTransfer.innerHTML = '👑';
+          btnTransfer.appendChild(this._createRoomIcon('crown'));
           btnTransfer.onclick = (e) => {
             e.stopPropagation();
             this.confirmTransferHost(player.playerNum, player.name);
@@ -1114,7 +1127,7 @@
           const btnKick = document.createElement('button');
           btnKick.className = 'btn-slot-action btn-kick';
           btnKick.title = `Keluarkan ${player.name}`;
-          btnKick.innerHTML = '🚫';
+          btnKick.appendChild(this._createRoomIcon('user-round-x'));
           btnKick.onclick = (e) => {
             e.stopPropagation();
             this.confirmKickPlayer(player.playerNum, player.name);
@@ -1129,6 +1142,7 @@
         itemEl.appendChild(rightEl);
         containerEl.appendChild(itemEl);
       });
+      if (window.lucide) window.lucide.createIcons();
     }
 
     confirmTransferHost(targetPlayerNum, targetName) {
@@ -1136,7 +1150,7 @@
       const ok = window.confirm(`Pindahkan kepemilikan Host room kepada ${targetName || ('Pemain ' + targetPlayerNum)}?`);
       if (ok) {
         window.MP.transferHost(targetPlayerNum);
-        this.showToast(`👑 ${targetName || ('Pemain ' + targetPlayerNum)} sekarang menjadi Host room!`);
+        this.showToast(`${targetName || ('Pemain ' + targetPlayerNum)} sekarang menjadi Host room!`);
       }
     }
 
@@ -1145,7 +1159,7 @@
       const ok = window.confirm(`Keluarkan ${targetName || ('Pemain ' + targetPlayerNum)} dari room?`);
       if (ok) {
         window.MP.kickPlayer(targetPlayerNum);
-        this.showToast(`🚫 ${targetName || ('Pemain ' + targetPlayerNum)} telah dikeluarkan dari room.`);
+        this.showToast(`${targetName || ('Pemain ' + targetPlayerNum)} telah dikeluarkan dari room.`);
       }
     }
 
@@ -1161,20 +1175,33 @@
       return m[val] || 'Sedang';
     }
 
+    _createRoomIcon(name) {
+      const icon = document.createElement('i');
+      icon.setAttribute('data-lucide', name);
+      icon.setAttribute('aria-hidden', 'true');
+      return icon;
+    }
+
+    _setRoomButtonLabel(button, iconName, label) {
+      button.replaceChildren(this._createRoomIcon(iconName), document.createTextNode(label));
+      if (window.lucide) window.lucide.createIcons();
+    }
+
     updateRoomSettingsDisplay() {
       if (!this.roomSettingsSummary) return;
       this.roomSettingsSummary.innerHTML = '';
       const tags = [
-        `🏷️ ${this._themeLabel(this.selectedTheme)}`,
-        `📝 ${this.selectedCount} Soal`,
-        `⚡ ${this._diffLabel(this.selectedDiff)}`
+        ['shapes', this._themeLabel(this.selectedTheme)],
+        ['list-ordered', `${this.selectedCount} Soal`],
+        ['gauge', this._diffLabel(this.selectedDiff)]
       ];
-      tags.forEach(t => {
+      tags.forEach(([iconName, label]) => {
         const span = document.createElement('span');
         span.className = 'setting-tag';
-        span.textContent = t;
+        span.append(this._createRoomIcon(iconName), document.createTextNode(label));
         this.roomSettingsSummary.appendChild(span);
       });
+      if (window.lucide) window.lucide.createIcons();
 
       // Tombol edit hanya tampil jika saya host
       const currentHostNum = window.MP ? (window.MP.hostPlayerNum || 1) : 1;
@@ -1353,15 +1380,19 @@
         nameEl.className = 'player-name';
 
         let displayName = pData?.name || `Pemain ${i}`;
+        let playerIcon = '';
         let nameLabel = '';
         if (isSlotHost) {
-          nameLabel = isMe ? `👑 ${displayName} (Host/Kamu)` : `👑 ${displayName} (Host)`;
+          playerIcon = 'crown';
+          nameLabel = isMe ? `${displayName} (Host/Kamu)` : `${displayName} (Host)`;
         } else if (isFilled) {
-          nameLabel = isMe ? `👤 ${displayName} (Kamu)` : `👥 ${displayName}`;
+          playerIcon = isMe ? 'user-round' : 'users-round';
+          nameLabel = isMe ? `${displayName} (Kamu)` : displayName;
         } else {
-          nameLabel = `👥 Pemain ${i}`;
+          playerIcon = 'users-round';
+          nameLabel = `Pemain ${i}`;
         }
-        nameEl.textContent = nameLabel;
+        nameEl.append(this._createRoomIcon(playerIcon), document.createTextNode(nameLabel));
 
         leftEl.appendChild(dotEl);
         leftEl.appendChild(nameEl);
@@ -1375,13 +1406,13 @@
           badgeEl.textContent = 'MENUNGGU...';
         } else if (isSlotHost) {
           badgeEl.className = 'badge badge-host';
-          badgeEl.textContent = '👑 HOST';
+          badgeEl.append(this._createRoomIcon('crown'), document.createTextNode('HOST'));
         } else if (pData.isReady) {
           badgeEl.className = 'badge badge-ready';
-          badgeEl.textContent = '✅ SIAP';
+          badgeEl.append(this._createRoomIcon('check'), document.createTextNode('SIAP'));
         } else {
           badgeEl.className = 'badge badge-unready';
-          badgeEl.textContent = '⏳ BELUM SIAP';
+          badgeEl.append(this._createRoomIcon('clock-3'), document.createTextNode('BELUM SIAP'));
         }
         rightEl.appendChild(badgeEl);
 
@@ -1389,7 +1420,7 @@
           const btnTransfer = document.createElement('button');
           btnTransfer.className = 'btn-slot-action btn-transfer';
           btnTransfer.title = `Pindahkan Host ke ${displayName}`;
-          btnTransfer.innerHTML = '👑';
+          btnTransfer.appendChild(this._createRoomIcon('crown'));
           btnTransfer.onclick = (e) => {
             e.stopPropagation();
             this.confirmTransferHost(i, displayName);
@@ -1398,7 +1429,7 @@
           const btnKick = document.createElement('button');
           btnKick.className = 'btn-slot-action btn-kick';
           btnKick.title = `Keluarkan ${displayName}`;
-          btnKick.innerHTML = '🚫';
+          btnKick.appendChild(this._createRoomIcon('user-round-x'));
           btnKick.onclick = (e) => {
             e.stopPropagation();
             this.confirmKickPlayer(i, displayName);
@@ -1412,6 +1443,7 @@
         slotEl.appendChild(rightEl);
         this.roomPlayerSlots.appendChild(slotEl);
       }
+      if (window.lucide) window.lucide.createIcons();
 
       const guests = players.filter(p => p.playerNum !== currentHostNum);
       const allGuestsReady = guests.length > 0 && guests.every(p => p.isReady);
@@ -1422,14 +1454,14 @@
           this.btnStartCoop.style.display = 'block';
           if (guests.length === 0) {
             this.btnStartCoop.disabled = true;
-            this.btnStartCoop.textContent = `Menunggu teman bergabung (1/${maxPlayers})`;
+            this._setRoomButtonLabel(this.btnStartCoop, 'play', `Menunggu teman bergabung (1/${maxPlayers})`);
           } else if (!allGuestsReady) {
             const readyCount = guests.filter(p => p.isReady).length;
             this.btnStartCoop.disabled = true;
-            this.btnStartCoop.textContent = `Menunggu semua siap (${readyCount}/${guests.length} siap)`;
+            this._setRoomButtonLabel(this.btnStartCoop, 'play', `Menunggu semua siap (${readyCount}/${guests.length} siap)`);
           } else {
             this.btnStartCoop.disabled = false;
-            this.btnStartCoop.textContent = `Mulai permainan sekarang (${players.length}/${maxPlayers})`;
+            this._setRoomButtonLabel(this.btnStartCoop, 'play', `Mulai permainan sekarang (${players.length}/${maxPlayers})`);
           }
         } else {
           this.btnStartCoop.style.display = 'none';
@@ -1444,10 +1476,10 @@
           const isMyReady = myData ? myData.isReady : (window.MP ? window.MP.isReady : false);
           if (isMyReady) {
             this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action is-ready';
-            this.btnReadyCoop.textContent = 'Batalkan siap';
+            this._setRoomButtonLabel(this.btnReadyCoop, 'circle-check', 'Batalkan siap');
           } else {
             this.btnReadyCoop.className = 'btn btn-secondary btn-ready-action';
-            this.btnReadyCoop.textContent = 'Saya siap bermain';
+            this._setRoomButtonLabel(this.btnReadyCoop, 'check', 'Saya siap bermain');
           }
         } else {
           this.btnReadyCoop.style.display = 'none';
@@ -1531,7 +1563,7 @@
           window.MP.isGameInProgress = false;
         }
         this.hideLoading();
-        this.showToast('Gagal menyiapkan ronde baru. Coba lagi.');
+        this.showToast(err.message || 'Gagal menyiapkan ronde baru. Coba lagi.');
       } finally {
         this.isStartingCoopGame = false;
         if (this.btnPlayAgain) this.btnPlayAgain.disabled = false;
@@ -2245,25 +2277,35 @@
         avoidWords: history.map(item => item.word),
         avoidClues: history.map(item => item.clue)
       };
-      try {
-        const res = await fetch('/api/generate-puzzle', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error('API Respon status ' + res.status);
-        const puzzleData = await res.json();
-        if (!Array.isArray(puzzleData.words)) {
-          throw new Error('API tidak mengembalikan daftar kata');
-        }
-        return puzzleData;
-      } catch (err) {
-        console.warn('Gagal fetch /api/generate-puzzle, fallback offline aktif:', err);
+      const createClientFallback = async () => {
         const fallbackTheme = CLIENT_FALLBACKS[themeKey] ? themeKey : 'campuran';
-        const pool = CLIENT_FALLBACKS[fallbackTheme] || CLIENT_FALLBACKS.campuran;
-        const allFallbackWords = [...pool, ...Object.values(CLIENT_FALLBACKS).flat()];
+        const bankThemes = fallbackTheme === 'campuran' ? EXPANDED_OFFLINE_THEMES : [fallbackTheme];
+        const expandedEntries = [];
+        await Promise.all(bankThemes.map(async bankTheme => {
+          if (!CLIENT_OFFLINE_BANK_CACHE.has(bankTheme)) {
+            try {
+              const bankResponse = await fetch(`/data/offline-banks/${bankTheme}.json`);
+              if (!bankResponse.ok) {
+                throw new Error(`Bank offline ${bankTheme} gagal dimuat (${bankResponse.status}).`);
+              }
+              const bankData = await bankResponse.json();
+              if (!Array.isArray(bankData.entries)) {
+                throw new Error(`Format bank offline ${bankTheme} tidak valid.`);
+              }
+              CLIENT_OFFLINE_BANK_CACHE.set(bankTheme, bankData.entries);
+            } catch (err) {
+              console.warn(`Gagal memuat bank offline ${bankTheme}; memakai bank bawaan browser.`, err);
+              CLIENT_OFFLINE_BANK_CACHE.set(bankTheme, []);
+            }
+          }
+          expandedEntries.push(...CLIENT_OFFLINE_BANK_CACHE.get(bankTheme));
+        }));
+        const pool = [
+          ...(CLIENT_FALLBACKS[fallbackTheme] || CLIENT_FALLBACKS.campuran),
+          ...expandedEntries
+        ];
         const fallbackPool = [...new Map(
-          allFallbackWords.map(item => [item.word.toUpperCase(), item])
+          pool.map(item => [item.word.toUpperCase(), item])
         ).values()];
         const usedWords = new Set(history.map(item => item.word));
         const usedClues = new Set(history.map(item => this.normalizePuzzleClue(item.clue)));
@@ -2277,19 +2319,45 @@
           const previouslyUsed = this.shufflePuzzleWords(fallbackPool.filter(item => !freshSet.has(item)));
           freshSelection.push(...previouslyUsed.slice(0, count - freshSelection.length));
         }
-        const fallbackData = {
+        return {
           theme: isMixed ? 'campuran' : themeKey,
           difficulty: difficulty || 'medium',
           words: freshSelection,
           source: 'client-fallback'
         };
-        return fallbackData;
+      };
+      let res;
+      try {
+        res = await fetch('/api/generate-puzzle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.warn('Gagal fetch /api/generate-puzzle, fallback offline aktif:', err);
+        return createClientFallback();
       }
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        if (errorData.offline) return createClientFallback();
+        throw new Error(errorData.error || `API gagal dengan status ${res.status}`);
+      }
+      const puzzleData = await res.json();
+      if (puzzleData.offline) return createClientFallback();
+      if (!Array.isArray(puzzleData.words)) {
+        throw new Error('API tidak mengembalikan daftar kata');
+      }
+      return puzzleData;
     }
 
     notifyIfFallback(puzzleData) {
-      if (puzzleData.source === 'fallback' || puzzleData.source === 'client-fallback' || puzzleData.source === 'mixed') {
-        this.showToast('Sebagian soal memakai bank offline karena AI tidak memberi cukup jawaban baru.', 4000);
+      if (puzzleData.source === 'mixed') {
+        this.showToast('AI menghasilkan sebagian soal; sisanya diisi dari bank offline.', 4000);
+      } else if (puzzleData.source === 'fallback' || puzzleData.source === 'client-fallback') {
+        this.showToast('AI tidak tersedia. Soal kali ini menggunakan bank offline.', 4000);
+      } else if (puzzleData.words?.length < this.selectedCount) {
+        this.showToast(`AI hanya menghasilkan ${puzzleData.words.length} soal baru kali ini.`, 4000);
       }
     }
 

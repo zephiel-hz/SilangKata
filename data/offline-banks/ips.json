@@ -1,0 +1,1132 @@
+{
+  "theme": "ips",
+  "sources": [
+    {
+      "id": "britannica_indonesia_history",
+      "title": "Indonesia: History",
+      "url": "https://www.britannica.com/place/Indonesia/History"
+    },
+    {
+      "id": "kemdikbud_repository",
+      "title": "Repositori Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi",
+      "url": "https://repositori.kemdikbud.go.id/"
+    },
+    {
+      "id": "anri",
+      "title": "Arsip Nasional Republik Indonesia",
+      "url": "https://anri.go.id/"
+    },
+    {
+      "id": "britannica_bandung",
+      "title": "Bandung Conference",
+      "url": "https://www.britannica.com/event/Bandung-Conference"
+    },
+    {
+      "id": "britannica_egypt",
+      "title": "Ancient Egypt",
+      "url": "https://www.britannica.com/place/ancient-Egypt"
+    },
+    {
+      "id": "britannica_greece",
+      "title": "Ancient Greece",
+      "url": "https://www.britannica.com/place/ancient-Greece"
+    },
+    {
+      "id": "britannica_rome",
+      "title": "Ancient Rome",
+      "url": "https://www.britannica.com/place/ancient-Rome"
+    },
+    {
+      "id": "britannica_bastille",
+      "title": "Bastille",
+      "url": "https://www.britannica.com/topic/Bastille"
+    },
+    {
+      "id": "britannica_napoleon",
+      "title": "Napoleon I",
+      "url": "https://www.britannica.com/biography/Napoleon-I"
+    },
+    {
+      "id": "britannica_olympia",
+      "title": "Olympic Games",
+      "url": "https://www.britannica.com/sports/Olympic-Games"
+    },
+    {
+      "id": "bps_inflation",
+      "title": "Inflasi — Badan Pusat Statistik",
+      "url": "https://www.bps.go.id/id/subject/3/inflasi.html"
+    },
+    {
+      "id": "imf_inflation",
+      "title": "Back to Basics: Inflation — International Monetary Fund",
+      "url": "https://www.imf.org/en/Publications/fandd/issues/Series/Back-to-Basics/Inflation"
+    },
+    {
+      "id": "bank_indonesia",
+      "title": "Kebijakan Moneter — Bank Indonesia",
+      "url": "https://www.bi.go.id/id/fungsi-utama/moneter/default.aspx"
+    },
+    {
+      "id": "ojk_banks",
+      "title": "Perbankan — Otoritas Jasa Keuangan",
+      "url": "https://www.ojk.go.id/id/kanal/perbankan/Pages/Bank-Umum.aspx"
+    },
+    {
+      "id": "world_bank_indonesia",
+      "title": "The World Bank in Indonesia",
+      "url": "https://www.worldbank.org/en/country/indonesia/overview"
+    },
+    {
+      "id": "britannica_economics",
+      "title": "Economics",
+      "url": "https://www.britannica.com/money/economics"
+    },
+    {
+      "id": "unctad_trade",
+      "title": "Trade Analysis — United Nations Conference on Trade and Development",
+      "url": "https://unctad.org/topic/commodities/trade-analysis"
+    },
+    {
+      "id": "ilo_wages",
+      "title": "Wages — International Labour Organization",
+      "url": "https://www.ilo.org/topics/wages"
+    },
+    {
+      "id": "britannica_geography",
+      "title": "Geography",
+      "url": "https://www.britannica.com/science/geography"
+    },
+    {
+      "id": "britannica_indonesia",
+      "title": "Indonesia",
+      "url": "https://www.britannica.com/place/Indonesia"
+    },
+    {
+      "id": "usgs_volcanoes",
+      "title": "Volcano Hazards Program — U.S. Geological Survey",
+      "url": "https://www.usgs.gov/programs/VHP"
+    },
+    {
+      "id": "britannica_sociology",
+      "title": "Sociology",
+      "url": "https://www.britannica.com/topic/sociology"
+    },
+    {
+      "id": "britannica_culture",
+      "title": "Culture",
+      "url": "https://www.britannica.com/topic/culture"
+    },
+    {
+      "id": "bps_population",
+      "title": "Kependudukan — Badan Pusat Statistik",
+      "url": "https://www.bps.go.id/id/subject/12/kependudukan.html"
+    },
+    {
+      "id": "un_migration",
+      "title": "International Migration — United Nations Department of Economic and Social Affairs",
+      "url": "https://www.un.org/development/desa/pd/content/international-migration"
+    }
+  ],
+  "entries": [
+    {
+      "word": "DEMAK",
+      "clue": "Kesultanan ini berkembang di pesisir utara Jawa pada awal abad keenam belas.",
+      "sources": ["britannica_indonesia_history", "kemdikbud_repository"]
+    },
+    {
+      "word": "KEDIRI",
+      "clue": "Kerajaan Hindu di Jawa Timur ini meninggalkan prasasti yang menyebut Raja Jayabaya.",
+      "sources": ["britannica_indonesia_history", "kemdikbud_repository"]
+    },
+    {
+      "word": "KUTAI",
+      "clue": "Kerajaan awal di Kalimantan Timur ini dikenal melalui prasasti Yupa berbahasa Sanskerta.",
+      "sources": ["britannica_indonesia_history", "kemdikbud_repository"]
+    },
+    {
+      "word": "KALINGGA",
+      "clue": "Catatan Tiongkok abad ketujuh mengaitkan kerajaan di Jawa ini dengan Ratu Shima.",
+      "sources": ["britannica_indonesia_history", "kemdikbud_repository"]
+    },
+    {
+      "word": "YUPA",
+      "clue": "Prasasti batu berbentuk tiang ini mencatat upacara kurban pada masa Kutai.",
+      "sources": ["britannica_indonesia_history", "kemdikbud_repository"]
+    },
+    {
+      "word": "TERNATE",
+      "clue": "Kesultanan rempah di Maluku ini pernah bersaing dengan Tidore dalam perdagangan cengkih.",
+      "sources": ["britannica_indonesia_history", "kemdikbud_repository"]
+    },
+    {
+      "word": "TIDORE",
+      "clue": "Kesultanan di Maluku ini berkembang bersama perdagangan rempah dan berpusat di sebuah pulau.",
+      "sources": ["britannica_indonesia_history", "kemdikbud_repository"]
+    },
+    {
+      "word": "BANTEN",
+      "clue": "Kesultanan di ujung barat Jawa ini tumbuh sebagai pelabuhan penting perdagangan lada.",
+      "sources": ["britannica_indonesia_history", "kemdikbud_repository"]
+    },
+    {
+      "word": "ACEH",
+      "clue": "Kesultanan di ujung utara Sumatra ini berkembang sebagai pusat perdagangan dan pembelajaran Islam.",
+      "sources": ["britannica_indonesia_history", "kemdikbud_repository"]
+    },
+    {
+      "word": "PAJANG",
+      "clue": "Kesultanan di Jawa Tengah ini muncul setelah melemahnya kekuasaan Demak.",
+      "sources": ["britannica_indonesia_history", "kemdikbud_repository"]
+    },
+    {
+      "word": "SUMPAH",
+      "clue": "Ikrar pemuda yang diucapkan pada 1928 menegaskan satu tanah air, bangsa, dan bahasa.",
+      "sources": ["anri", "kemdikbud_repository"]
+    },
+    {
+      "word": "AGUSTUS",
+      "clue": "Proklamasi kemerdekaan Indonesia dibacakan pada tanggal tujuh belas bulan ini.",
+      "sources": ["anri", "kemdikbud_repository"]
+    },
+    {
+      "word": "HATTA",
+      "clue": "Tokoh ini mendampingi Soekarno saat membacakan proklamasi kemerdekaan Indonesia.",
+      "sources": ["anri", "kemdikbud_repository"]
+    },
+    {
+      "word": "SOEKARNO",
+      "clue": "Presiden pertama Indonesia membacakan proklamasi kemerdekaan pada 17 Agustus 1945.",
+      "sources": ["anri", "kemdikbud_repository"]
+    },
+    {
+      "word": "SUDIRMAN",
+      "clue": "Panglima besar ini memimpin perang gerilya Indonesia ketika Belanda melancarkan agresi militer.",
+      "sources": ["anri", "kemdikbud_repository"]
+    },
+    {
+      "word": "BANDUNG",
+      "clue": "Kota ini menjadi tuan rumah Konferensi Asia-Afrika pada tahun 1955.",
+      "sources": ["britannica_bandung"]
+    },
+    {
+      "word": "MESIR",
+      "clue": "Peradaban kuno di lembah Sungai Nil ini membangun kompleks makam kerajaan di Giza.",
+      "sources": ["britannica_egypt"]
+    },
+    {
+      "word": "PIRAMIDA",
+      "clue": "Bangunan makam raksasa di Giza ini menjadi peninggalan penting peradaban Mesir kuno.",
+      "sources": ["britannica_egypt"]
+    },
+    {
+      "word": "FIRAUN",
+      "clue": "Sebutan bagi penguasa kerajaan kuno di lembah Sungai Nil ini berasal dari Mesir.",
+      "sources": ["britannica_egypt"]
+    },
+    {
+      "word": "ROMAWI",
+      "clue": "Kekaisaran kuno yang berpusat di Italia ini membangun jalan dan saluran air yang luas.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "ATHENA",
+      "clue": "Polis Yunani kuno ini dikenal sebagai tempat berkembangnya demokrasi langsung.",
+      "sources": ["britannica_greece"]
+    },
+    {
+      "word": "SPARTA",
+      "clue": "Polis Yunani kuno ini terkenal dengan pendidikan militer bagi warga laki-lakinya.",
+      "sources": ["britannica_greece"]
+    },
+    {
+      "word": "BASTILLE",
+      "clue": "Benteng penjara di Paris ini diserbu warga pada awal Revolusi Prancis.",
+      "sources": ["britannica_bastille"]
+    },
+    {
+      "word": "NAPOLEON",
+      "clue": "Kaisar Prancis ini mengeluarkan kitab hukum yang menjadi dasar banyak aturan sipil.",
+      "sources": ["britannica_napoleon"]
+    },
+    {
+      "word": "OLIMPIA",
+      "clue": "Tempat suci di Yunani ini menjadi lokasi penyelenggaraan perlombaan kuno untuk menghormati Zeus.",
+      "sources": ["britannica_olympia"]
+    },
+    {
+      "word": "PAJAK",
+      "clue": "Pungutan wajib kepada negara ini membiayai layanan dan kebutuhan publik.",
+      "sources": ["britannica_economics", "world_bank_indonesia"]
+    },
+    {
+      "word": "DEBIT",
+      "clue": "Kartu pembayaran ini langsung mengurangi saldo rekening ketika transaksi disetujui.",
+      "sources": ["ojk_banks", "bank_indonesia"]
+    },
+    {
+      "word": "KREDIT",
+      "clue": "Fasilitas pinjaman ini mewajibkan penerima melunasi dana sesuai perjanjian.",
+      "sources": ["ojk_banks", "britannica_economics"]
+    },
+    {
+      "word": "BANK",
+      "clue": "Lembaga keuangan ini menghimpun simpanan masyarakat dan menyalurkan pinjaman.",
+      "sources": ["ojk_banks", "bank_indonesia"]
+    },
+    {
+      "word": "DEPOSITO",
+      "clue": "Simpanan berjangka ini hanya dapat dicairkan pada waktu sesuai kesepakatan dengan bank.",
+      "sources": ["ojk_banks"]
+    },
+    {
+      "word": "SAHAM",
+      "clue": "Surat berharga ini menunjukkan kepemilikan sebagian modal dalam suatu perusahaan.",
+      "sources": ["britannica_economics", "ojk_banks"]
+    },
+    {
+      "word": "OBLIGASI",
+      "clue": "Surat utang ini mewajibkan penerbit membayar pokok dan imbalan kepada pemegangnya.",
+      "sources": ["britannica_economics", "ojk_banks"]
+    },
+    {
+      "word": "MODAL",
+      "clue": "Dana atau aset ini digunakan untuk memulai dan menjalankan kegiatan usaha.",
+      "sources": ["britannica_economics", "world_bank_indonesia"]
+    },
+    {
+      "word": "LABA",
+      "clue": "Selisih positif antara pendapatan dan biaya usaha ini disebut keuntungan.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "RUGI",
+      "clue": "Keadaan usaha ini terjadi ketika biaya melebihi pendapatan dalam suatu periode.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "UPAH",
+      "clue": "Imbalan yang dibayar pemberi kerja kepada pekerja ini dapat dihitung berdasarkan waktu atau hasil.",
+      "sources": ["ilo_wages"]
+    },
+    {
+      "word": "GAJI",
+      "clue": "Pembayaran rutin kepada pegawai ini biasanya ditetapkan untuk periode kerja tertentu.",
+      "sources": ["ilo_wages"]
+    },
+    {
+      "word": "KURS",
+      "clue": "Nilai tukar ini menyatakan harga satu mata uang dalam mata uang lainnya.",
+      "sources": ["bank_indonesia", "britannica_economics"]
+    },
+    {
+      "word": "EKSPOR",
+      "clue": "Penjualan barang atau jasa dari dalam negeri ke pasar negara lain disebut kegiatan ini.",
+      "sources": ["unctad_trade", "world_bank_indonesia"]
+    },
+    {
+      "word": "IMPOR",
+      "clue": "Pembelian barang atau jasa dari luar negeri untuk digunakan di dalam negeri disebut kegiatan ini.",
+      "sources": ["unctad_trade", "world_bank_indonesia"]
+    },
+    {
+      "word": "DEVISA",
+      "clue": "Alat pembayaran luar negeri ini dapat berupa mata uang asing atau klaim yang dapat dicairkan.",
+      "sources": ["bank_indonesia", "britannica_economics"]
+    },
+    {
+      "word": "SUBSIDI",
+      "clue": "Bantuan pemerintah ini dapat menekan biaya produksi atau harga barang tertentu.",
+      "sources": ["world_bank_indonesia", "britannica_economics"]
+    },
+    {
+      "word": "KOPERASI",
+      "clue": "Badan usaha beranggotakan orang-orang ini menjalankan kegiatan berdasarkan asas kekeluargaan.",
+      "sources": ["world_bank_indonesia", "britannica_economics"]
+    },
+    {
+      "word": "KONSUMEN",
+      "clue": "Pelaku ekonomi ini menggunakan barang atau jasa untuk memenuhi kebutuhan.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "PRODUSEN",
+      "clue": "Pelaku ekonomi ini menghasilkan barang atau jasa untuk ditawarkan kepada pihak lain.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "MONOPOLI",
+      "clue": "Struktur pasar ini terjadi ketika satu penjual menguasai penawaran suatu barang.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "RESESI",
+      "clue": "Kemerosotan kegiatan ekonomi yang berlangsung luas selama suatu periode disebut kondisi ini.",
+      "sources": ["britannica_economics", "world_bank_indonesia"]
+    },
+    {
+      "word": "DEFLASI",
+      "clue": "Penurunan tingkat harga barang dan jasa secara umum dalam suatu perekonomian disebut keadaan ini.",
+      "sources": ["imf_inflation", "bank_indonesia", "bps_inflation"]
+    },
+    {
+      "word": "TARIF",
+      "clue": "Pungutan yang dikenakan atas barang impor ini dapat memengaruhi harga perdagangan lintas negara.",
+      "sources": ["unctad_trade", "britannica_economics"]
+    },
+    {
+      "word": "NERACA",
+      "clue": "Laporan keuangan ini merangkum aset, kewajiban, dan ekuitas pada tanggal tertentu.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "BENUA",
+      "clue": "Daratan luas yang dikelilingi samudra atau laut ini mencakup wilayah yang sangat besar.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "DELTA",
+      "clue": "Dataran endapan di muara sungai ini terbentuk ketika aliran membawa dan mengendapkan sedimen.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "GURUN",
+      "clue": "Wilayah kering dengan curah hujan sangat rendah ini dapat ditemukan di berbagai benua.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "TELUK",
+      "clue": "Bagian laut yang menjorok ke daratan ini biasanya dikelilingi pantai pada beberapa sisinya.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "SELAT",
+      "clue": "Jalur laut sempit ini memisahkan dua daratan dan menghubungkan perairan yang lebih luas.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "TANJUNG",
+      "clue": "Bagian daratan yang menjorok ke laut ini memiliki perairan pada beberapa sisinya.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "DATARAN",
+      "clue": "Bentang alam yang relatif rata ini memiliki perbedaan ketinggian kecil di wilayah luas.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "LEMBAH",
+      "clue": "Daerah rendah di antara bukit atau gunung ini sering dilalui aliran sungai.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "GUNUNG",
+      "clue": "Bentuk permukaan bumi yang menjulang tinggi ini biasanya memiliki lereng dan puncak.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "SUNGAI",
+      "clue": "Aliran air alami ini bergerak dari daerah tinggi menuju danau, laut, atau aliran lain.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "DANAU",
+      "clue": "Genangan air luas yang dikelilingi daratan ini dapat terbentuk melalui proses alam.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "PULAU",
+      "clue": "Daratan yang seluruh sisinya dikelilingi air ini dapat berada di sungai, danau, atau laut.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "ATOL",
+      "clue": "Terumbu karang berbentuk cincin ini mengelilingi laguna di kawasan tropis.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "GLETSER",
+      "clue": "Massa es daratan yang bergerak perlahan ini terbentuk dari timbunan salju selama bertahun-tahun.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "KRAKATAU",
+      "clue": "Gunung api di Selat Sunda ini mengalami letusan besar pada tahun 1883.",
+      "sources": ["usgs_volcanoes", "britannica_indonesia"]
+    },
+    {
+      "word": "MERAPI",
+      "clue": "Gunung api aktif di perbatasan Jawa Tengah dan Yogyakarta ini pernah meletus pada 2010.",
+      "sources": ["usgs_volcanoes", "britannica_indonesia"]
+    },
+    {
+      "word": "EVEREST",
+      "clue": "Puncak tertinggi di atas permukaan laut ini berada di rangkaian Himalaya.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "ANDES",
+      "clue": "Rangkaian pegunungan di Amerika Selatan ini membentang di sepanjang tepi barat benua.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "SAHARA",
+      "clue": "Hamparan kering luas di Afrika Utara ini merupakan gurun panas terbesar di dunia.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "AMAZON",
+      "clue": "Sungai besar di Amerika Selatan ini mengalir menuju Samudra Atlantik.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "DANUBE",
+      "clue": "Sungai Eropa ini mengalir melalui beberapa ibu kota sebelum bermuara di Laut Hitam.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "KONGO",
+      "clue": "Sungai di Afrika tengah ini melintasi garis khatulistiwa dan bermuara di Samudra Atlantik.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "HIMALAYA",
+      "clue": "Rangkaian pegunungan Asia ini mencakup puncak tertinggi di permukaan bumi.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "ARKTIK",
+      "clue": "Kawasan di sekitar Kutub Utara ini mencakup samudra dan daratan yang berbatasan dengannya.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "PASIFIK",
+      "clue": "Samudra terbesar di bumi ini membentang di antara Asia, Australia, dan Amerika.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "NORMA",
+      "clue": "Aturan bersama dalam masyarakat ini memberi pedoman bagi perilaku anggotanya.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "NILAI",
+      "clue": "Gagasan tentang hal yang dianggap baik atau penting ini memengaruhi tindakan sosial.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "ADAT",
+      "clue": "Kebiasaan yang diwariskan dalam suatu komunitas ini mengatur berbagai upacara dan hubungan sosial.",
+      "sources": ["britannica_culture", "kemdikbud_repository"]
+    },
+    {
+      "word": "BUDAYA",
+      "clue": "Keseluruhan cara hidup yang dipelajari dan diwariskan oleh suatu kelompok disebut konsep ini.",
+      "sources": ["britannica_culture"]
+    },
+    {
+      "word": "GENDER",
+      "clue": "Peran dan harapan sosial yang berkaitan dengan laki-laki serta perempuan dibahas melalui konsep ini.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "STATUS",
+      "clue": "Kedudukan seseorang dalam susunan sosial masyarakat disebut istilah ini.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "PERAN",
+      "clue": "Perilaku yang diharapkan dari seseorang berdasarkan kedudukan sosialnya disebut konsep ini.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "KELAS",
+      "clue": "Pembagian masyarakat berdasarkan kedudukan ekonomi dan sosial ini menghasilkan beberapa lapisan.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "MIGRASI",
+      "clue": "Perpindahan penduduk dari satu tempat tinggal ke tempat lain disebut proses ini.",
+      "sources": ["un_migration", "bps_population"]
+    },
+    {
+      "word": "DIFUSI",
+      "clue": "Penyebaran unsur kebudayaan dari satu kelompok ke kelompok lain disebut proses ini.",
+      "sources": ["britannica_culture"]
+    },
+    {
+      "word": "KONFLIK",
+      "clue": "Pertentangan antarindividu atau kelompok dapat muncul ketika kepentingan mereka tidak sejalan.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "KASTA",
+      "clue": "Sistem pelapisan sosial turun-temurun ini secara historis kuat dalam masyarakat India.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "STRATA",
+      "clue": "Lapisan-lapisan dalam susunan sosial masyarakat ini menunjukkan perbedaan kedudukan.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "KELUARGA",
+      "clue": "Kelompok sosial yang umumnya memiliki hubungan kekerabatan ini menjadi lingkungan awal sosialisasi.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "KLAN",
+      "clue": "Kelompok kekerabatan ini biasanya menghubungkan anggotanya melalui garis keturunan bersama.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "KAMPUNG",
+      "clue": "Permukiman atau lingkungan tempat tinggal ini sering menjadi ruang interaksi warga setempat.",
+      "sources": ["britannica_sociology", "kemdikbud_repository"]
+    },
+    {
+      "word": "DESA",
+      "clue": "Wilayah administratif di Indonesia ini memiliki pemerintahan dan masyarakat setempat.",
+      "sources": ["bps_population", "world_bank_indonesia"]
+    },
+    {
+      "word": "KOTA",
+      "clue": "Permukiman padat dengan kegiatan nonpertanian yang beragam ini menjadi pusat layanan dan pekerjaan.",
+      "sources": ["britannica_sociology", "bps_population"]
+    },
+    {
+      "word": "SENSUS",
+      "clue": "Penghitungan penduduk secara menyeluruh ini mengumpulkan data pada waktu tertentu.",
+      "sources": ["bps_population"]
+    },
+    {
+      "word": "PENDUDUK",
+      "clue": "Orang-orang yang menetap di suatu wilayah pada waktu tertentu disebut kelompok ini.",
+      "sources": ["bps_population"]
+    },
+    {
+      "word": "MIGRAN",
+      "clue": "Orang yang berpindah dari tempat tinggal biasanya ke wilayah lain untuk menetap disebut istilah ini.",
+      "sources": ["un_migration", "bps_population"]
+    },
+    {
+      "word": "RUKUN",
+      "clue": "Sikap hidup damai dan saling menghormati ini membantu menjaga hubungan antarwarga.",
+      "sources": ["britannica_sociology", "kemdikbud_repository"]
+    },
+    {
+      "word": "WARGA",
+      "clue": "Anggota suatu komunitas yang tinggal di lingkungan bersama ini dapat berpartisipasi dalam kegiatan setempat.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "RITUAL",
+      "clue": "Rangkaian tindakan simbolis yang dilakukan menurut tata cara tertentu ini dapat memperkuat identitas kelompok.",
+      "sources": ["britannica_culture", "britannica_sociology"]
+    },
+    {
+      "word": "KELOMPOK",
+      "clue": "Sekumpulan orang yang berinteraksi dan memiliki hubungan sosial tertentu disebut satuan ini.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "SUMERIA",
+      "clue": "Peradaban kota di Mesopotamia selatan mengembangkan tulisan paku pada milenium keempat sebelum Masehi.",
+      "sources": ["britannica_egypt"]
+    },
+    {
+      "word": "FENISIA",
+      "clue": "Bangsa pelaut di pesisir Levant menggunakan alfabet yang memengaruhi sejumlah aksara kemudian.",
+      "sources": ["britannica_greece"]
+    },
+    {
+      "word": "AKAD",
+      "clue": "Penguasa Sargon membangun kerajaan besar di Mesopotamia sekitar abad kedua puluh empat sebelum Masehi.",
+      "sources": ["britannica_egypt"]
+    },
+    {
+      "word": "ZIGURAT",
+      "clue": "Bangunan bertingkat dari Mesopotamia kuno berfungsi sebagai kompleks kuil.",
+      "sources": ["britannica_egypt"]
+    },
+    {
+      "word": "POMPEII",
+      "clue": "Kota Romawi ini tertimbun abu letusan Vesuvius pada tahun tujuh puluh sembilan Masehi.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "HANNIBAL",
+      "clue": "Jenderal Kartago ini memimpin pasukan melintasi Alpen dalam perang melawan Roma.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "CAESAR",
+      "clue": "Pemimpin Romawi ini dibunuh sekelompok senator pada tahun empat puluh empat sebelum Masehi.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "CARTHAGO",
+      "clue": "Kota kuno di Afrika Utara ini menjadi pusat kekuatan maritim Kartago.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "MONGOL",
+      "clue": "Kekaisaran ini berkembang pesat di bawah kepemimpinan Jenghis Khan pada abad ketiga belas.",
+      "sources": ["britannica_greece"]
+    },
+    {
+      "word": "SAMURAI",
+      "clue": "Golongan prajurit Jepang ini melayani penguasa feodal dan mengikuti kode etik bushido.",
+      "sources": ["britannica_greece"]
+    },
+    {
+      "word": "TOKUGAWA",
+      "clue": "Keluarga ini memerintah Jepang dari Edo selama masa pemerintahan shogun yang panjang.",
+      "sources": ["britannica_greece"]
+    },
+    {
+      "word": "MEIJI",
+      "clue": "Restorasi Jepang pada tahun 1868 mengakhiri pemerintahan shogun dan memulihkan kekuasaan kekaisaran.",
+      "sources": ["britannica_greece"]
+    },
+    {
+      "word": "RENESANS",
+      "clue": "Gerakan kebudayaan Eropa ini berkembang pesat di kota-kota Italia pada abad keempat belas.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "WATERLOO",
+      "clue": "Kekalahan Napoleon pada 1815 terjadi di medan perang di wilayah Belgia modern.",
+      "sources": ["britannica_napoleon"]
+    },
+    {
+      "word": "SARAJEVO",
+      "clue": "Pembunuhan pewaris takhta Austria-Hongaria di kota ini memicu rangkaian krisis pada 1914.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "ASEAN",
+      "clue": "Organisasi regional Asia Tenggara ini didirikan melalui Deklarasi Bangkok pada 1967.",
+      "sources": ["britannica_bandung"]
+    },
+    {
+      "word": "NONBLOK",
+      "clue": "Konferensi Bandung pada 1955 mendorong kerja sama negara yang tidak berpihak pada dua blok.",
+      "sources": ["britannica_bandung"]
+    },
+    {
+      "word": "TRAKTAT",
+      "clue": "Perjanjian internasional tertulis ini mengikat negara-negara yang menyetujuinya.",
+      "sources": ["britannica_bandung"]
+    },
+    {
+      "word": "KONGRES",
+      "clue": "Pertemuan wakil negara Asia-Afrika tahun 1955 berlangsung di kota Bandung.",
+      "sources": ["britannica_bandung"]
+    },
+    {
+      "word": "OLIGARKI",
+      "clue": "Bentuk pemerintahan ini menempatkan kekuasaan pada kelompok kecil.",
+      "sources": ["britannica_greece"]
+    },
+    {
+      "word": "SENAT",
+      "clue": "Lembaga politik Romawi kuno ini memberi nasihat kepada pejabat dan berpengaruh dalam pemerintahan.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "REPUBLIK",
+      "clue": "Bentuk negara ini memilih kepala negara melalui mekanisme yang ditetapkan hukum.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "FEODAL",
+      "clue": "Sistem sosial Eropa abad pertengahan mengaitkan tanah dengan kewajiban dan hubungan kesetiaan.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "ABOLISI",
+      "clue": "Penghapusan perbudakan di Amerika Serikat ditetapkan melalui amendemen konstitusi pada 1865.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "SECESSI",
+      "clue": "Pemisahan sebelas negara bagian selatan dari Amerika Serikat mendahului perang saudara pada 1861.",
+      "sources": ["britannica_rome"]
+    },
+    {
+      "word": "ASET",
+      "clue": "Dalam neraca, sumber daya bernilai yang dikuasai perusahaan dicatat pada sisi harta.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "UTANG",
+      "clue": "Kewajiban membayar sejumlah uang kepada pihak lain dicatat sebagai liabilitas dalam laporan keuangan.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "PIUTANG",
+      "clue": "Tagihan perusahaan kepada pelanggan atas transaksi kredit dicatat sebagai hak penerimaan.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "PASOKAN",
+      "clue": "Jumlah barang yang tersedia untuk dijual pada harga tertentu disebut sisi penawaran.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "KUOTA",
+      "clue": "Batas jumlah barang yang boleh diimpor dapat ditetapkan pemerintah melalui kebijakan perdagangan.",
+      "sources": ["unctad_trade"]
+    },
+    {
+      "word": "KARTEL",
+      "clue": "Kesepakatan antarpelaku usaha untuk mengatur harga atau produksi dapat mengurangi persaingan.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "DUOPOLI",
+      "clue": "Struktur pasar dengan dua penjual utama membuat keputusan masing-masing saling memengaruhi.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "KAPITAL",
+      "clue": "Dalam teori ekonomi, barang yang digunakan untuk menghasilkan barang lain termasuk faktor produksi.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "SIMPANAN",
+      "clue": "Dana nasabah yang dititipkan pada lembaga keuangan dapat berbentuk giro atau deposito.",
+      "sources": ["ojk_banks"]
+    },
+    {
+      "word": "TABUNGAN",
+      "clue": "Produk keuangan yang dapat ditarik sesuai ketentuan lembaga biasanya memberi imbal hasil.",
+      "sources": ["ojk_banks"]
+    },
+    {
+      "word": "ANGSURAN",
+      "clue": "Pembayaran pinjaman secara berkala membagi kewajiban menjadi sejumlah cicilan terjadwal.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "BUNGA",
+      "clue": "Biaya pinjaman atau imbal hasil simpanan umumnya dinyatakan sebagai persentase per periode.",
+      "sources": ["bank_indonesia"]
+    },
+    {
+      "word": "DIVIDEN",
+      "clue": "Perusahaan dapat membagikan sebagian laba kepada pemegang saham setelah keputusan rapat.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "LIKUID",
+      "clue": "Instrumen keuangan yang mudah dijual tanpa perubahan harga besar memiliki sifat ini.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "NOMINAL",
+      "clue": "Nilai yang tercetak pada uang atau dokumen disebut nilai tertulis, bukan selalu nilai riil.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "ECERAN",
+      "clue": "Penjualan barang dalam jumlah kecil langsung kepada konsumen akhir disebut perdagangan ritel.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "KONSUMSI",
+      "clue": "Dalam penghitungan produk domestik bruto, belanja rumah tangga menjadi salah satu komponen utama.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "PRODUKSI",
+      "clue": "Kegiatan mengubah bahan dan tenaga kerja menjadi barang atau jasa disebut proses ini.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "MARGIN",
+      "clue": "Selisih antara harga jual dan biaya suatu barang dapat dinyatakan sebagai ukuran ini.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "GADAI",
+      "clue": "Peminjam menerima dana dengan menyerahkan barang bergerak sebagai jaminan kepada pemberi pinjaman.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "KUPON",
+      "clue": "Obligasi tertentu membayar imbal hasil berkala kepada pemegangnya melalui pembayaran ini.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "LELANG",
+      "clue": "Penjual menawarkan barang kepada peserta yang bersaing mengajukan harga dalam proses terbuka.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "JAMINAN",
+      "clue": "Pemberi pinjaman dapat meminta agunan untuk mengurangi risiko jika debitur gagal membayar.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "SURPLUS",
+      "clue": "Ketika penerimaan lebih besar daripada pengeluaran, anggaran mencatat keadaan ini.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "DEFISIT",
+      "clue": "Selisih negatif anggaran muncul ketika belanja pemerintah melebihi pendapatannya.",
+      "sources": ["britannica_economics"]
+    },
+    {
+      "word": "KARST",
+      "clue": "Bentang alam berbatu kapur ini sering memiliki gua, dolina, dan aliran bawah tanah.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "ESTUARI",
+      "clue": "Muara tempat air sungai bercampur dengan air laut dipengaruhi pasang surut.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "LITOSFER",
+      "clue": "Lapisan kaku terluar bumi mencakup kerak dan bagian atas mantel.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "ATMOSFER",
+      "clue": "Selubung gas yang menyelimuti bumi tersusun terutama dari nitrogen dan oksigen.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "BIOSFER",
+      "clue": "Bagian planet yang mencakup wilayah tempat kehidupan berlangsung disebut istilah ekologi ini.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "KONTUR",
+      "clue": "Garis pada peta topografi ini menghubungkan titik-titik dengan ketinggian sama.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "ISOBAR",
+      "clue": "Pada peta cuaca, garis ini menghubungkan tempat dengan tekanan udara sama.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "ISOTERM",
+      "clue": "Garis pada peta iklim ini menghubungkan lokasi dengan suhu yang sama.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "MONSUN",
+      "clue": "Perubahan arah angin musiman di Asia Selatan memengaruhi pola hujan tahunan.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "SIKLON",
+      "clue": "Sistem tekanan rendah berputar dan dapat membawa angin kencang serta hujan lebat.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "TSUNAMI",
+      "clue": "Gelombang laut besar ini dapat terjadi setelah pergeseran dasar laut secara mendadak.",
+      "sources": ["usgs_volcanoes"]
+    },
+    {
+      "word": "GEMPA",
+      "clue": "Getaran permukaan bumi dapat muncul akibat pelepasan energi di sepanjang patahan.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "LAVA",
+      "clue": "Batuan cair yang mencapai permukaan setelah keluar dari gunung api disebut demikian.",
+      "sources": ["usgs_volcanoes"]
+    },
+    {
+      "word": "MAGMA",
+      "clue": "Batuan cair di bawah permukaan bumi dapat mengandung kristal dan gas terlarut.",
+      "sources": ["usgs_volcanoes"]
+    },
+    {
+      "word": "KALDERA",
+      "clue": "Cekungan besar di puncak gunung api dapat terbentuk setelah ruang magma runtuh.",
+      "sources": ["usgs_volcanoes"]
+    },
+    {
+      "word": "TEKTONIK",
+      "clue": "Pergerakan lempeng kerak bumi ini membentuk pegunungan dan memicu aktivitas geologi.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "SUBDUKSI",
+      "clue": "Proses ketika satu lempeng litosfer bergerak ke bawah lempeng lain disebut demikian.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "MANGROVE",
+      "clue": "Vegetasi pesisir ini tumbuh di zona pasang surut tropis dan tahan terhadap air asin.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "SAVANA",
+      "clue": "Ekosistem tropis ini didominasi rumput dengan pepohonan yang tersebar.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "TAIGA",
+      "clue": "Hutan berkonifer di lintang tinggi meluas di Kanada dan Rusia.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "TUNDRA",
+      "clue": "Bioma dingin tanpa pepohonan ini memiliki musim tumbuh yang sangat singkat.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "FJORD",
+      "clue": "Teluk sempit berdinding curam ini terbentuk oleh erosi gletser.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "ISMUS",
+      "clue": "Jalur daratan sempit yang menghubungkan dua wilayah besar sekaligus memisahkan perairan disebut demikian.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "OASIS",
+      "clue": "Sumber air di wilayah kering memungkinkan tumbuhan dan permukiman berkembang.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "MERIDIAN",
+      "clue": "Garis bujur pada globe menghubungkan Kutub Utara dan Kutub Selatan.",
+      "sources": ["britannica_geography"]
+    },
+    {
+      "word": "DEVIANSI",
+      "clue": "Perilaku yang menyimpang dari norma sosial suatu kelompok dikaji dalam sosiologi.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "SANKSI",
+      "clue": "Tanggapan kelompok terhadap pelanggaran aturan dapat berupa hukuman atau penghargaan.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "LEMBAGA",
+      "clue": "Pola aturan dan peran yang mengatur kebutuhan masyarakat disebut institusi sosial.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "ELIT",
+      "clue": "Kelompok kecil yang memiliki pengaruh besar dalam suatu masyarakat sering disebut lapisan ini.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "KOHESI",
+      "clue": "Ikatan yang memperkuat rasa kebersamaan dan keterhubungan di antara anggota kelompok disebut demikian.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "ANOMI",
+      "clue": "Keadaan melemahnya pedoman norma dalam masyarakat diperkenalkan sebagai konsep oleh Émile Durkheim.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "DIALEK",
+      "clue": "Ragam bahasa yang khas bagi wilayah atau kelompok tertentu memiliki kosakata dan pelafalan tersendiri.",
+      "sources": ["britannica_culture"]
+    },
+    {
+      "word": "TABU",
+      "clue": "Larangan sosial atau budaya ini membatasi tindakan tertentu dalam suatu komunitas.",
+      "sources": ["britannica_culture"]
+    },
+    {
+      "word": "MITOS",
+      "clue": "Kisah tradisional ini sering menjelaskan asal-usul dunia atau kepercayaan suatu masyarakat.",
+      "sources": ["britannica_culture"]
+    },
+    {
+      "word": "SIMBOL",
+      "clue": "Tanda yang mewakili gagasan atau identitas tertentu dapat memiliki makna bersama bagi kelompok.",
+      "sources": ["britannica_culture"]
+    },
+    {
+      "word": "FOLKLOR",
+      "clue": "Tradisi lisan, cerita rakyat, dan kebiasaan turun-temurun termasuk warisan budaya ini.",
+      "sources": ["britannica_culture"]
+    },
+    {
+      "word": "ENDOGAMI",
+      "clue": "Aturan perkawinan ini mengharuskan seseorang memilih pasangan dari kelompok sosialnya sendiri.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "EKSOGAMI",
+      "clue": "Aturan perkawinan ini mengharuskan seseorang memilih pasangan dari luar kelompok tertentu.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "MONOGAMI",
+      "clue": "Bentuk perkawinan ini melibatkan satu pasangan pada satu waktu menurut definisi sosial umum.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "POLIGAMI",
+      "clue": "Bentuk perkawinan ini melibatkan lebih dari satu pasangan secara bersamaan.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "KULTURAL",
+      "clue": "Kata sifat ini berkaitan dengan nilai, praktik, dan hasil kebudayaan suatu masyarakat.",
+      "sources": ["britannica_culture"]
+    },
+    {
+      "word": "KONVENSI",
+      "clue": "Kesepakatan atau kebiasaan yang diterima luas dapat menjadi pedoman perilaku sosial.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "KAWIN",
+      "clue": "Ikatan antara pasangan yang diakui secara sosial atau hukum membentuk hubungan ini.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "ADOPSI",
+      "clue": "Proses hukum ini membentuk hubungan orang tua dan anak tanpa hubungan biologis.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "KOMUNE",
+      "clue": "Permukiman ini mengatur kehidupan bersama melalui kepemilikan atau tanggung jawab kolektif.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "SINDIKAT",
+      "clue": "Organisasi pekerja ini berunding secara kolektif untuk memperjuangkan kepentingan anggotanya.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "PATRON",
+      "clue": "Dalam hubungan sosial tidak setara, pihak berkuasa dapat menyediakan perlindungan atau sumber daya.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "KLIEN",
+      "clue": "Dalam hubungan sosial timpang, pihak lemah menerima bantuan sebagai balasan atas kesetiaan.",
+      "sources": ["britannica_sociology"]
+    },
+    {
+      "word": "TOTEM",
+      "clue": "Lambang hewan atau benda ini dapat mewakili identitas dan hubungan kekerabatan suatu kelompok.",
+      "sources": ["britannica_culture"]
+    },
+    {
+      "word": "DIASPORA",
+      "clue": "Komunitas ini tinggal di luar tanah asalnya sambil mempertahankan ikatan budaya atau sejarah.",
+      "sources": ["britannica_sociology"]
+    }
+  ]
+}

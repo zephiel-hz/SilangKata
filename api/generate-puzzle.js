@@ -1,5 +1,6 @@
 // api/generate-puzzle.js
 // Vercel Serverless Function: Proxy Google Gemini untuk generate TTS SilangKata
+import { readFileSync } from 'node:fs';
 
 if (!process.env.GEMINI_API_KEY && typeof process.loadEnvFile === 'function') {
   try { process.loadEnvFile('.env.local'); } catch (_) {}
@@ -255,6 +256,7 @@ const FALLBACK_DICTIONARIES = {
     { word: 'KARTINI', clue: 'Tokoh pahlawan ini dikenal karena perjuangannya untuk pendidikan dan emansipasi perempuan.' },
     { word: 'PANCASILA', clue: 'Dasar falsafah dan ideologi ini menjadi pedoman bagi bangsa Indonesia.' },
     { word: 'BOROBUDUR', clue: 'Candi Buddha megah ini dibangun pada masa Dinasti Syailendra.' },
+    { word: 'SOEKARNO', clue: 'Presiden pertama Republik Indonesia ini memproklamasikan kemerdekaan bersama Mohammad Hatta.' },
     { word: 'BALI', clue: 'Pulau di Indonesia ini terkenal sebagai tujuan wisata dan kerap dijuluki Pulau Dewata.' },
     { word: 'SABANG', clue: 'Kota kepulauan ini terletak di ujung paling barat wilayah Indonesia.' },
     { word: 'MERAUKE', clue: 'Kota ini berada di wilayah Papua dan dikenal sebagai salah satu titik paling timur Indonesia.' },
@@ -324,6 +326,30 @@ const FALLBACK_DICTIONARIES = {
   ]
 };
 
+const EXPANDED_OFFLINE_THEMES = [
+  'hewan', 'buah', 'transportasi', 'olahraga', 'makanan',
+  'teknologi', 'umum', 'ipa', 'ips'
+];
+
+for (const theme of EXPANDED_OFFLINE_THEMES) {
+  const bankUrl = new URL(`../data/offline-banks/${theme}.json`, import.meta.url);
+  const bankData = JSON.parse(readFileSync(bankUrl, 'utf8'));
+  if (!Array.isArray(bankData.entries) || bankData.entries.length < 100) {
+    throw new Error(`Offline bank ${theme} must contain at least 100 curated entries.`);
+  }
+  FALLBACK_DICTIONARIES[theme].push(...bankData.entries);
+  FALLBACK_DICTIONARIES.campuran.push(...bankData.entries);
+}
+
+const CANONICAL_ANSWER_SPELLINGS = {
+  SUKARNO: 'SOEKARNO'
+};
+
+function normalizeAnswerSpelling(answer) {
+  const normalized = answer.toUpperCase().replace(/[^A-Z]/g, '');
+  return CANONICAL_ANSWER_SPELLINGS[normalized] || normalized;
+}
+
 // Membersihkan respon teks dari Gemini menjadi JSON valid
 function extractJsonFromText(rawText) {
   if (!rawText) return null;
@@ -369,7 +395,7 @@ function validateAndFilterWords(words, minLen, maxLen, targetCount) {
 
   for (const item of words) {
     if (!item || typeof item.word !== 'string' || typeof item.clue !== 'string') continue;
-    const cleanWord = item.word.toUpperCase().replace(/[^A-Z]/g, '');
+    const cleanWord = normalizeAnswerSpelling(item.word);
     const cleanClue = item.clue.replace(/\s+/g, ' ').trim();
 
     if (
@@ -475,7 +501,7 @@ function getFallbackPuzzle(theme, difficulty, targetCount = 12, avoidWords = new
   const themeKey = isMixed ? 'campuran' : (FALLBACK_DICTIONARIES[theme] ? theme : 'campuran');
   const source = FALLBACK_DICTIONARIES[themeKey] || FALLBACK_DICTIONARIES.campuran;
 
-  const allWords = [...source, ...Object.values(FALLBACK_DICTIONARIES).flat()];
+  const allWords = source;
   const seenWords = new Set();
   const freshPool = [];
   const usedBeforePool = [];
@@ -563,7 +589,7 @@ export default async function handler(req, res) {
 
   const avoidWords = normalizeAvoidWords(body.avoidWords);
   const avoidClues = normalizeAvoidClues(body.avoidClues);
-  const generationCount = Math.min(60, targetCount + Math.min(10, Math.ceil(targetCount * 0.25)));
+  const generationCount = Math.min(60, targetCount + Math.min(24, Math.ceil(targetCount * 0.75)));
   const useCache = body.useCache === true;
   const cacheKey = `${theme}_${difficulty}_${targetCount}`;
   const now = Date.now();
@@ -623,11 +649,13 @@ HINDARI PENGULANGAN DARI PERMAINAN PEMAIN INI:
 ATURAN MUTU BAHASA DAN SOAL (WAJIB):
 1. Gunakan Bahasa Indonesia baku yang sederhana dan alami. Susun kalimat seperti yang biasa ditulis penyunting soal Indonesia; jangan menerjemahkan pola kalimat bahasa Inggris secara harfiah.
 2. Setiap clue harus berupa satu kalimat utuh yang lancar, terdiri dari 5–20 kata dan 24–110 karakter, serta diakhiri tanda titik. Gunakan subjek dan predikat yang jelas. Jangan kirim frasa definisi yang terpotong.
-3. Buat clue spesifik sehingga satu jawaban paling masuk akal. Sertakan ciri pembeda, fungsi, konteks, atau fakta yang tepat; hindari petunjuk umum yang bisa cocok dengan banyak jawaban.
-4. Kesulitan berasal dari pengetahuan yang diuji, bukan dari susunan kalimat yang rumit. Jangan memakai teka-teki samar, kiasan yang membingungkan, istilah langka tanpa konteks, atau fakta yang meragukan.
-5. Pakai kosakata Indonesia yang lazim dan ejaan baku. Hindari istilah Inggris jika ada padanan Indonesia yang umum. Nama serapan yang sudah lazim boleh digunakan.
-6. Jangan menyebut jawaban, bentuk berimbuhannya, label kategori, tanda kurung, atau keterangan tambahan di dalam clue.
-7. Jawaban harus kata Indonesia atau nama diri yang dikenal, ditulis dengan huruf Latin tanpa spasi/tanda baca, panjang 4–8 huruf. Jangan mengarang kata atau memakai ejaan yang dipaksakan agar cocok.
+3. Setiap jawaban dan clue WAJIB sesuai dengan tema yang diminta. Jangan memasukkan jawaban dari tema lain untuk memenuhi jumlah; jika ragu, pilih kata lain yang jelas sesuai tema.
+4. Buat clue spesifik sehingga satu jawaban paling masuk akal. Sertakan ciri pembeda, fungsi, konteks, atau fakta yang tepat; hindari petunjuk umum yang bisa cocok dengan banyak jawaban.
+5. Kesulitan berasal dari pengetahuan yang diuji, bukan dari susunan kalimat yang rumit. Jangan memakai teka-teki samar, kiasan yang membingungkan, istilah langka tanpa konteks, atau fakta yang meragukan.
+6. Pakai kosakata Indonesia yang lazim dan ejaan baku. Hindari istilah Inggris jika ada padanan Indonesia yang umum. Nama serapan yang sudah lazim boleh digunakan.
+7. Jangan menyebut jawaban, bentuk berimbuhannya, label kategori, tanda kurung, atau keterangan tambahan di dalam clue.
+8. Jawaban harus kata Indonesia atau nama diri yang dikenal, ditulis dengan huruf Latin tanpa spasi/tanda baca, panjang 4–8 huruf. Jangan mengarang kata atau memakai ejaan yang dipaksakan agar cocok.
+9. Untuk nama orang, gunakan ejaan resmi atau ejaan historis yang benar dan pertahankan bentuknya; jangan menyederhanakan atau mengganti ejaan. Contoh: tulis "Soekarno", bukan "Sukarno".
 
 CONTOH GAYA YANG DIHARAPKAN:
 - { "word": "BADAK", "clue": "Mamalia ini memiliki cula dan hidup di Asia atau Afrika." }
@@ -777,6 +805,14 @@ Format output STRICT JSON (tanpa markdown, tanpa teks pengantar):
 
   try {
     // 5. PRIORITAS 5: KAMUS FALLBACK OFFLINE LOKAL (Zero Downtime)
+    const responseTheme = typeof parsed?.theme === 'string'
+      ? parsed.theme.toLowerCase().trim()
+      : theme;
+    if (parsed && responseTheme !== theme) {
+      console.warn(`[AI] Tema jawaban tidak sesuai permintaan (${responseTheme} != ${theme}). Menggunakan fallback tema yang dipilih.`);
+      const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount, avoidWords, avoidClues);
+      return res.status(200).json(fallbackData);
+    }
     if (!parsed || !Array.isArray(parsed.words)) {
       console.warn('[AI] Semua provider AI tidak tersedia / gagal. Menggunakan kamus offline fallback.');
       const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount, avoidWords, avoidClues);
@@ -793,7 +829,13 @@ Format output STRICT JSON (tanpa markdown, tanpa teks pengantar):
       .filter(item => !avoidWords.has(item.word) && !avoidClues.has(normalizeClue(item.clue)))
       .slice(0, targetCount);
 
-    if (validWords.length >= 5 && validWords.length < targetCount) {
+    if (validWords.length < targetCount) {
+      if (validWords.length < 3) {
+        console.warn(`[AI] Hanya ${validWords.length} soal AI yang lolos penyaringan. Memakai bank offline untuk memenuhi puzzle.`);
+        const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount, avoidWords, avoidClues);
+        return res.status(200).json(fallbackData);
+      }
+
       const fillerAvoidWords = new Set([...avoidWords, ...validWords.map(item => item.word)]);
       const fillerAvoidClues = new Set([...avoidClues, ...validWords.map(item => normalizeClue(item.clue))]);
       const missingCount = targetCount - validWords.length;
@@ -808,16 +850,13 @@ Format output STRICT JSON (tanpa markdown, tanpa teks pengantar):
         validWords = [...validWords, ...fallbackWords];
         activeSource = 'mixed';
       }
-    }
-
-    if (validWords.length < 5) {
-      console.warn('[AI] Kata baru dari AI kurang dari minimal. Menggunakan kamus offline.');
-      const fallbackData = getFallbackPuzzle(theme, difficulty, targetCount, avoidWords, avoidClues);
-      return res.status(200).json(fallbackData);
+      if (validWords.length < targetCount) {
+        console.warn(`[AI] Menghasilkan ${validWords.length} dari ${targetCount} soal setelah memakai bank offline.`);
+      }
     }
 
     const result = {
-      theme: parsed.theme || theme,
+      theme,
       difficulty,
       words: validWords,
       source: activeSource
